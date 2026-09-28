@@ -37,9 +37,10 @@ export function toGenerationError(caught: unknown): GenerationError {
     return { code: "missing_key", message: caught.message }
   if (caught instanceof PlatformError) {
     const { status, message } = caught
-    if (status === 401 || status === 403) return { code: "invalid_key", message }
-    // 402 mapping follows common API convention; not verified against Higgsfield docs.
-    if (status === 402) return { code: "insufficient_credits", message }
+    // Per the official @higgsfield/client SDK: 401 = invalid credentials,
+    // 403 = not enough credits (NotEnoughCreditsError).
+    if (status === 401) return { code: "invalid_key", message }
+    if (status === 402 || status === 403) return { code: "insufficient_credits", message }
     if (status === 429) return { code: "rate_limited", message }
     if (status === 400 || status === 404 || status === 422) return { code: "invalid_input", message }
     return { code: "platform_error", message }

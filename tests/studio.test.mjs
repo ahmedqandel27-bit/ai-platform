@@ -79,6 +79,7 @@ test("a start frame on Seedance maps to image-to-video with image_url", () => {
 test("platform errors map to stable codes", () => {
   assert.equal(toGenerationError(new MissingCredentialsError()).code, "missing_key");
   assert.equal(toGenerationError(new PlatformError(401, { detail: "bad" })).code, "invalid_key");
+  assert.equal(toGenerationError(new PlatformError(403, { detail: "no credits" })).code, "insufficient_credits");
   assert.equal(toGenerationError(new PlatformError(429, {})).code, "rate_limited");
   assert.equal(toGenerationError(new PlatformError(422, { detail: "x" })).code, "invalid_input");
   assert.equal(toGenerationError(new PlatformError(503, {})).code, "platform_error");
