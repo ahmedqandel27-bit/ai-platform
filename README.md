@@ -49,7 +49,8 @@ banner is shown, so you can look around the UI before setting anything up. Never
 ### 1. Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. **Project Settings → API**: copy the URL, the `anon` key and the `service_role` key into `.env.local`.
+2. **Project Settings → API**: copy the project URL and the `anon` (or publishable) key into `.env.local`.
+   No service-role key is needed: every query runs as the signed-in user under Row Level Security.
 3. **SQL Editor**: run each file in `supabase/migrations/` **once, in order**. You can also use `supabase db push` with the Supabase CLI.
 
    | File | Creates |
@@ -207,8 +208,6 @@ settings from these files, so a new model file is all it takes to add a model.
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser + server | No |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server (protected by RLS) | No |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only: job worker and webhook | **Yes** |
-| `NEXT_PUBLIC_SITE_URL` | OAuth redirects and webhooks | No |
 | `HF_API_BASE_URL` | Server only, `https://api.higgsfield.ai` | No |
 | `HF_API_KEY` | Optional team key (server only) | **Yes** |
 | `HF_API_KEY_ALLOWED` | Who may use the team key: e-mails and/or `@domains` (empty = nobody) | No |
@@ -265,7 +264,7 @@ middleware.ts          Session refresh + auth guard
 1. Push the repo to GitHub, then choose **Import Project** in Vercel. The framework (Next.js) is detected automatically.
 2. Add every variable from `.env.example` under **Settings → Environment Variables**. `NEXT_PUBLIC_*` values are
    baked in at build time, so redeploy after changing them.
-3. Set `NEXT_PUBLIC_SITE_URL` to your production domain, and add `https://YOUR-DOMAIN/auth/callback`
+3. Add `https://YOUR-DOMAIN/auth/callback`
    to the Supabase redirect URLs (and to Google OAuth if you use it).
 4. Run the four migrations on the production Supabase project (see *Local setup → Supabase*).
 5. Sign up as the first user; you are the owner of your team. In **Settings**, rename the team, set the budget,
