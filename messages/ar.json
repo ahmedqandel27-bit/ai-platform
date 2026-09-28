@@ -84,5 +84,123 @@
     "checkEmail": "افتح إيميلك علشان تأكد الحساب.",
     "notConfigured": "Supabase لسه مش متظبط. حط المفاتيح في ⁨.env.local⁩ علشان تفعّل تسجيل الدخول.",
     "continuePreview": "كمّل في وضع المعاينة"
+  },
+  "key": {
+    "connect": "Connect API key",
+    "manage": "Manage API key",
+    "replace": "Replace API key",
+    "remove": "Remove API key",
+    "statusSaved": "API key saved",
+    "statusTeam": "بيستخدم مفتاح التيم",
+    "label": "API key",
+    "getKey": "هات مفتاح من open.higgsfield.ai",
+    "back": "رجوع",
+    "close": "إغلاق",
+    "saved": "API key saved",
+    "removed": "اتشال المفتاح",
+    "savedHint": "فيه مفتاح محفوظ في المتصفح ده (httpOnly cookie). الحفظ لوحده مش معناه إن المفتاح شغال — أول توليد هيوضح."
+  },
+  "studio": {
+    "model": "الموديل",
+    "prompt": "البرومبت",
+    "promptPlaceholderImage": "اوصف الصورة… مثلاً: ساعة فخمة على رخام أسود، إضاءة ناعمة من الجنب، عدسة 85mm",
+    "promptPlaceholderVideo": "اوصف اللقطة… مثلاً: دولي بطيء على ساعة فخمة والانعكاسات بتعدّي على الزجاج",
+    "references": "المراجع",
+    "addMedia": "ضيف ميديا",
+    "dropHint": "اسحب صور أو فيديو أو صوت هنا، أو دوس للاختيار",
+    "uploading": "بيرفع…",
+    "noReferences": "الموديل ده بياخد برومبت بس.",
+    "settings": "الإعدادات",
+    "generate": "توليد",
+    "generating": "بيبعت…",
+    "shortcut": "⌘ Enter",
+    "connectFirst": "اربط الـ API key علشان تولّد",
+    "remove": "شيل",
+    "role": "الدور",
+    "accepts": "بيقبل: {kinds}",
+    "roles": {
+      "reference": "مرجع",
+      "start": "أول فريم",
+      "end": "آخر فريم",
+      "video": "فيديو مرجعي",
+      "audio": "صوت",
+      "source": "الفيديو الأصلي"
+    },
+    "kinds": {
+      "image": "صور",
+      "video": "فيديوهات",
+      "audio": "صوت"
+    },
+    "caps": {
+      "text": "نص",
+      "frames": "أول/آخر فريم",
+      "start": "صورة ← فيديو",
+      "refs": "مراجع",
+      "source": "تعديل فيديو",
+      "audio": "صوت"
+    },
+    "setting": {
+      "aspectRatio": "الأبعاد",
+      "resolution": "الجودة",
+      "duration": "المدة (ثانية)",
+      "batchSize": "عدد الصور",
+      "enhancePrompt": "تحسين البرومبت",
+      "generateAudio": "توليد صوت",
+      "sound": "الصوت",
+      "cfgScale": "الالتزام بالبرومبت",
+      "multiShots": "لقطات متعددة",
+      "keepOriginalSound": "احتفظ بالصوت الأصلي",
+      "characterOrientation": "اتجاه الشخصية",
+      "bitrateMode": "البت ريت"
+    },
+    "feedTitle": "التوليدات",
+    "feedEmpty": "مفيش حاجة لسه",
+    "feedEmptyImage": "اكتب البرومبت ودوس توليد. الصور هتظهر هنا.",
+    "feedEmptyVideo": "اكتب البرومبت، وممكن تضيف أول فريم، ودوس توليد. الفيديوهات هتظهر هنا.",
+    "status": {
+      "submitting": "بيبعت",
+      "queued": "في الطابور",
+      "in_progress": "بيتولّد",
+      "completed": "خلص",
+      "failed": "فشل",
+      "nsfw": "اتمنع",
+      "canceled": "اتلغى",
+      "error": "خطأ"
+    },
+    "cancel": "إلغاء",
+    "canceling": "بيلغي…",
+    "retry": "حاول تاني",
+    "remix": "ريمكس",
+    "download": "تحميل",
+    "animate": "حرّكها فيديو",
+    "delete": "مسح",
+    "open": "فتح",
+    "copied": "الإعدادات اتحمّلت في الكومبوزر",
+    "details": "التفاصيل",
+    "requestId": "Request ID",
+    "created": "اتعمل",
+    "images": "{count} صور",
+    "errors": {
+      "missing_key": "اربط Higgsfield API key علشان تولّد.",
+      "invalid_key": "Higgsfield رفض المفتاح. غيّره وجرب تاني.",
+      "insufficient_credits": "الكريدت في Higgsfield مش كفاية.",
+      "rate_limited": "طلبات كتير — استنى شوية وجرب تاني.",
+      "content_blocked": "اتمنع من فلتر المحتوى. غيّر صياغة البرومبت أو المراجع.",
+      "timeout": "الوقت خلص واحنا مستنيين Higgsfield.",
+      "submit_unknown": "مش واضح إذا الطلب وصل لـ Higgsfield ولا لأ. راجع الهيستوري على Higgsfield قبل ما تولّد تاني.",
+      "unauthenticated": "سجّل دخولك علشان تكمّل."
+    }
+  },
+  "jobs": {
+    "title": "المهام",
+    "running": "{count} شغالين",
+    "recent": "الأخيرة",
+    "viewAll": "افتح المكتبة"
+  },
+  "library": {
+    "all": "الكل",
+    "images": "صور",
+    "videos": "فيديوهات",
+    "empty": "الصور والفيديوهات اللي هتولّدها هتظهر هنا."
   }
 }

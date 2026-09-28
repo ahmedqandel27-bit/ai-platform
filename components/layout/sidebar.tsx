@@ -9,6 +9,7 @@ import { NAV_ITEMS, type NavItem } from "@/lib/nav";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { KeyStatusRow } from "@/components/studio/key-dialog";
 import { Logo } from "./logo";
 
 /** Nav links, shared by the desktop sidebar and the mobile drawer. */
@@ -89,6 +90,9 @@ export function Sidebar() {
       </div>
       <div className="mt-6 flex-1 overflow-y-auto">
         <NavLinks collapsed={collapsed} />
+      </div>
+      <div className="mb-2">
+        <KeyStatusRow collapsed={collapsed} />
       </div>
       <button
         onClick={toggle}

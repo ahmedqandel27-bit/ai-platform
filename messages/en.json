@@ -12,14 +12,38 @@
     "manage": "Manage"
   },
   "pages": {
-    "superComputer": { "title": "Super Computer", "description": "Describe what you want in plain language. The agent plans the pipeline, picks the best models and generates everything." },
-    "video": { "title": "Video Studio", "description": "Text-to-video, image-to-video, start/end frames, camera moves, lip-sync and upscaling." },
-    "image": { "title": "Image Studio", "description": "Text-to-image, style references, character consistency, editing and upscaling." },
-    "library": { "title": "Library", "description": "Every image and video you've generated, with the exact prompt, model and cost." },
-    "projects": { "title": "Projects", "description": "Group assets by client, campaign or idea." },
-    "prompts": { "title": "Prompt Library", "description": "Save, tag and reuse your best prompts." },
-    "usage": { "title": "Usage & Costs", "description": "Spend per day, model, project and team member." },
-    "settings": { "title": "Settings", "description": "Team, roles, spending caps and model defaults." }
+    "superComputer": {
+      "title": "Super Computer",
+      "description": "Describe what you want in plain language. The agent plans the pipeline, picks the best models and generates everything."
+    },
+    "video": {
+      "title": "Video Studio",
+      "description": "Text-to-video, image-to-video, start/end frames, camera moves, lip-sync and upscaling."
+    },
+    "image": {
+      "title": "Image Studio",
+      "description": "Text-to-image, style references, character consistency, editing and upscaling."
+    },
+    "library": {
+      "title": "Library",
+      "description": "Every image and video you've generated, with the exact prompt, model and cost."
+    },
+    "projects": {
+      "title": "Projects",
+      "description": "Group assets by client, campaign or idea."
+    },
+    "prompts": {
+      "title": "Prompt Library",
+      "description": "Save, tag and reuse your best prompts."
+    },
+    "usage": {
+      "title": "Usage & Costs",
+      "description": "Spend per day, model, project and team member."
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Team, roles, spending caps and model defaults."
+    }
   },
   "placeholder": {
     "comingIn": "Coming in phase {phase}",
@@ -60,5 +84,123 @@
     "checkEmail": "Check your email to confirm your account.",
     "notConfigured": "Supabase is not configured yet. Add your keys to .env.local to enable sign-in.",
     "continuePreview": "Continue in preview mode"
+  },
+  "key": {
+    "connect": "Connect API key",
+    "manage": "Manage API key",
+    "replace": "Replace API key",
+    "remove": "Remove API key",
+    "statusSaved": "API key saved",
+    "statusTeam": "Using team API key",
+    "label": "API key",
+    "getKey": "Get a key at open.higgsfield.ai",
+    "back": "Back",
+    "close": "Close",
+    "saved": "API key saved",
+    "removed": "API key removed",
+    "savedHint": "A key is saved in this browser (httpOnly cookie). Saving does not prove it is valid: the first generation will tell you."
+  },
+  "studio": {
+    "model": "Model",
+    "prompt": "Prompt",
+    "promptPlaceholderImage": "Describe the image… e.g. luxury watch on black marble, soft rim light, 85mm",
+    "promptPlaceholderVideo": "Describe the shot… e.g. slow dolly-in on a luxury watch, reflections sweeping across the glass",
+    "references": "References",
+    "addMedia": "Add media",
+    "dropHint": "Drop images, videos or audio, or click to browse",
+    "uploading": "Uploading…",
+    "noReferences": "This model takes a prompt only.",
+    "settings": "Settings",
+    "generate": "Generate",
+    "generating": "Submitting…",
+    "shortcut": "⌘ Enter",
+    "connectFirst": "Connect API key to generate",
+    "remove": "Remove",
+    "role": "Role",
+    "accepts": "Accepts: {kinds}",
+    "roles": {
+      "reference": "Reference",
+      "start": "Start frame",
+      "end": "End frame",
+      "video": "Video reference",
+      "audio": "Audio",
+      "source": "Source video"
+    },
+    "kinds": {
+      "image": "images",
+      "video": "videos",
+      "audio": "audio"
+    },
+    "caps": {
+      "text": "Text",
+      "frames": "Start/End frame",
+      "start": "Image → video",
+      "refs": "References",
+      "source": "Edit video",
+      "audio": "Audio"
+    },
+    "setting": {
+      "aspectRatio": "Aspect ratio",
+      "resolution": "Resolution",
+      "duration": "Duration (s)",
+      "batchSize": "Images",
+      "enhancePrompt": "Enhance prompt",
+      "generateAudio": "Generate audio",
+      "sound": "Sound",
+      "cfgScale": "Prompt adherence",
+      "multiShots": "Multi-shot",
+      "keepOriginalSound": "Keep original sound",
+      "characterOrientation": "Character orientation",
+      "bitrateMode": "Bitrate"
+    },
+    "feedTitle": "Generations",
+    "feedEmpty": "Nothing here yet",
+    "feedEmptyImage": "Write a prompt on the left and hit Generate. Your images show up here.",
+    "feedEmptyVideo": "Write a prompt, optionally add a start frame, and hit Generate. Your videos show up here.",
+    "status": {
+      "submitting": "Submitting",
+      "queued": "Queued",
+      "in_progress": "Generating",
+      "completed": "Done",
+      "failed": "Failed",
+      "nsfw": "Blocked",
+      "canceled": "Canceled",
+      "error": "Error"
+    },
+    "cancel": "Cancel",
+    "canceling": "Canceling…",
+    "retry": "Retry",
+    "remix": "Remix",
+    "download": "Download",
+    "animate": "Animate this",
+    "delete": "Delete",
+    "open": "Open",
+    "copied": "Settings loaded into the composer",
+    "details": "Details",
+    "requestId": "Request ID",
+    "created": "Created",
+    "images": "{count} images",
+    "errors": {
+      "missing_key": "Connect your Higgsfield API key to generate.",
+      "invalid_key": "Higgsfield rejected the API key. Replace it and try again.",
+      "insufficient_credits": "Not enough Higgsfield credits.",
+      "rate_limited": "Rate limited — wait a moment and try again.",
+      "content_blocked": "Blocked by the content filter. Rephrase the prompt or change references.",
+      "timeout": "Timed out waiting for Higgsfield.",
+      "submit_unknown": "Unclear whether this reached Higgsfield. Check your Higgsfield history before generating again.",
+      "unauthenticated": "Sign in to continue."
+    }
+  },
+  "jobs": {
+    "title": "Jobs",
+    "running": "{count} running",
+    "recent": "Recent",
+    "viewAll": "Open library"
+  },
+  "library": {
+    "all": "All",
+    "images": "Images",
+    "videos": "Videos",
+    "empty": "Your generated images and videos will appear here."
   }
 }

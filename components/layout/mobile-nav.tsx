@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { Logo } from "./logo";
 import { NavLinks } from "./sidebar";
+import { KeyStatusRow } from "@/components/studio/key-dialog";
 
 /** Slide-in drawer navigation for screens below lg. */
 export function MobileNav() {
@@ -42,9 +43,10 @@ export function MobileNav() {
                 <X className="size-4" />
               </button>
             </div>
-            <div className="mt-6 overflow-y-auto">
+            <div className="mt-6 flex-1 overflow-y-auto">
               <NavLinks onNavigate={() => setOpen(false)} />
             </div>
+            <KeyStatusRow />
           </motion.aside>
         </>
       )}
