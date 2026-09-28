@@ -114,3 +114,19 @@ test("Supabase URL is reduced to its origin (REST URL / trailing slash pasted by
   assert.equal(normalizeSupabaseUrl(""), "");
   assert.equal(normalizeSupabaseUrl(undefined), "");
 });
+
+test("platform errors carry Higgsfield's reason, the HTTP status and the host", async () => {
+  const { createPlatformClient } = await import("../generation/platform.ts");
+  const make = (status, body) =>
+    createPlatformClient({ apiKey: "k:s", baseUrl: "https://api.higgsfield.ai", fetch: async () => new Response(typeof body === "string" ? body : JSON.stringify(body), { status }) });
+  const info = console.info;
+  console.info = () => {};
+  try {
+    await assert.rejects(() => make(403, { detail: "Insufficient API credits" }).submit("bytedance/seedance-2.5/text-to-video", {}), (e) => e.status === 403 && e.message === "Insufficient API credits (HTTP 403 · api.higgsfield.ai)");
+    await assert.rejects(() => make(401, { message: "Invalid key" }).submit("m", {}), (e) => /Invalid key \(HTTP 401 · api\.higgsfield\.ai\)/.test(e.message));
+    await assert.rejects(() => make(422, { detail: [{ loc: ["body", "duration"], msg: "must be ≤ 10" }] }).submit("m", {}), (e) => /body\.duration: must be ≤ 10/.test(e.message));
+    await assert.rejects(() => make(500, "").submit("m", {}), (e) => /Platform request failed \(HTTP 500/.test(e.message));
+  } finally {
+    console.info = info;
+  }
+});

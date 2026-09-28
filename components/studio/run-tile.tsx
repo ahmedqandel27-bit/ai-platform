@@ -29,11 +29,15 @@ export function useErrorText() {
   const t = useTranslations("studio.errors");
   return (run: Run) => {
     const code = run.error?.code;
+    const raw = run.error?.message ?? "";
     if (code && t.has(code)) {
       // Validation / platform messages carry the specific reason; keep them.
-      return code === "invalid_input" || code === "platform_error" ? (run.error?.message ?? "") : t(code);
+      if (code === "invalid_input" || code === "platform_error") return raw;
+      // Answers from Higgsfield ("… (HTTP 403 · api.higgsfield.ai)") are shown
+      // under the friendly text so the real reason is visible.
+      return raw.includes("(HTTP ") ? `${t(code)}\n${raw}` : t(code);
     }
-    return run.error?.message ?? "";
+    return raw;
   };
 }
 
@@ -128,7 +132,7 @@ export function RunTile({ run, onOpen, readOnly = false }: { run: Run; onOpen: (
               <TriangleAlert className="size-5 text-danger" />
             )}
             <p className="text-xs font-medium">{t(`status.${run.status}`)}</p>
-            {run.status !== "canceled" && <p className="line-clamp-3 text-[11px] text-muted">{errorText(run)}</p>}
+            {run.status !== "canceled" && <p className="line-clamp-4 whitespace-pre-line text-[11px] text-muted" dir="auto">{errorText(run)}</p>}
           </div>
         </button>
       )}
