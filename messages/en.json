@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "superComputer": "Super Computer",
+    "video": "Video Studio",
+    "image": "Image Studio",
+    "library": "Library",
+    "projects": "Projects",
+    "prompts": "Prompts",
+    "usage": "Usage",
+    "settings": "Settings",
+    "create": "Create",
+    "manage": "Manage"
+  },
+  "pages": {
+    "superComputer": { "title": "Super Computer", "description": "Describe what you want in plain language. The agent plans the pipeline, picks the best models and generates everything." },
+    "video": { "title": "Video Studio", "description": "Text-to-video, image-to-video, start/end frames, camera moves, lip-sync and upscaling." },
+    "image": { "title": "Image Studio", "description": "Text-to-image, style references, character consistency, editing and upscaling." },
+    "library": { "title": "Library", "description": "Every image and video you've generated, with the exact prompt, model and cost." },
+    "projects": { "title": "Projects", "description": "Group assets by client, campaign or idea." },
+    "prompts": { "title": "Prompt Library", "description": "Save, tag and reuse your best prompts." },
+    "usage": { "title": "Usage & Costs", "description": "Spend per day, model, project and team member." },
+    "settings": { "title": "Settings", "description": "Team, roles, spending caps and model defaults." }
+  },
+  "placeholder": {
+    "comingIn": "Coming in phase {phase}",
+    "body": "The shell is ready. This workspace is built in the next phases."
+  },
+  "topbar": {
+    "search": "Search or jump to…",
+    "jobs": "Jobs",
+    "noJobs": "No jobs yet",
+    "noJobsHint": "Generations you start will appear here with live progress.",
+    "language": "العربية",
+    "signOut": "Sign out",
+    "account": "Account",
+    "menu": "Menu"
+  },
+  "palette": {
+    "placeholder": "Type a command or search…",
+    "empty": "No results.",
+    "navigate": "Navigate",
+    "actions": "Actions",
+    "switchLanguage": "Switch language to Arabic"
+  },
+  "preview": {
+    "banner": "Preview mode — Supabase is not configured, sign-in is disabled. Add your keys to .env.local."
+  },
+  "auth": {
+    "welcome": "Welcome back",
+    "subtitle": "Sign in to your studio",
+    "createAccount": "Create your account",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "google": "Continue with Google",
+    "or": "or",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "checkEmail": "Check your email to confirm your account.",
+    "notConfigured": "Supabase is not configured yet. Add your keys to .env.local to enable sign-in.",
+    "continuePreview": "Continue in preview mode"
+  }
+}
