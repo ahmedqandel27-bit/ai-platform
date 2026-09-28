@@ -103,3 +103,14 @@ test("team key allowlist fails closed and matches e-mails or @domains exactly", 
   assert.equal(isAllowedForTeamKey("sara@theviralempire.agency", undefined), false);
   assert.equal(isAllowedForTeamKey(null, list), false);
 });
+
+test("Supabase URL is reduced to its origin (REST URL / trailing slash pasted by mistake)", async () => {
+  const { normalizeSupabaseUrl } = await import("../lib/env.ts");
+  assert.equal(normalizeSupabaseUrl("https://abc.supabase.co"), "https://abc.supabase.co");
+  assert.equal(normalizeSupabaseUrl("https://abc.supabase.co/"), "https://abc.supabase.co");
+  assert.equal(normalizeSupabaseUrl(" https://abc.supabase.co/rest/v1/ "), "https://abc.supabase.co");
+  assert.equal(normalizeSupabaseUrl("https://abc.supabase.co/auth/v1"), "https://abc.supabase.co");
+  assert.equal(normalizeSupabaseUrl("http://127.0.0.1:54321"), "http://127.0.0.1:54321");
+  assert.equal(normalizeSupabaseUrl(""), "");
+  assert.equal(normalizeSupabaseUrl(undefined), "");
+});
