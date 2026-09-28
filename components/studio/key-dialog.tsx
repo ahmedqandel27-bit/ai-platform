@@ -27,6 +27,8 @@ export function KeyDialog() {
   const t = useTranslations("key");
   const open = useKeyDialog((s) => s.open);
   const setOpen = useKeyDialog((s) => s.setOpen);
+  const lastRejection = useKeyDialog((s) => s.lastRejection);
+  const clearRejection = useKeyDialog((s) => s.clearRejection);
   const { data: status } = useKeyStatus();
   const queryClient = useQueryClient();
   const [replacing, setReplacing] = useState(false);
@@ -55,6 +57,7 @@ export function KeyDialog() {
         return;
       }
       setValue("");
+      clearRejection();
       await queryClient.invalidateQueries({ queryKey: KEY_STATUS_QUERY });
       toast.success(t("saved"));
       close(false);
@@ -64,6 +67,7 @@ export function KeyDialog() {
   const onRemove = () =>
     startTransition(async () => {
       await removeApiKey();
+      clearRejection();
       await queryClient.invalidateQueries({ queryKey: KEY_STATUS_QUERY });
       toast.success(t("removed"));
       close(false);
@@ -76,6 +80,15 @@ export function KeyDialog() {
           <KeyRound className="size-4 text-accent" />
         </div>
         <DialogTitle>{showForm ? (hasKey ? t("replace") : t("connect")) : t("manage")}</DialogTitle>
+
+        {lastRejection && (
+          <div className="mt-3 rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs" role="alert" data-testid="key-rejection">
+            <p className="font-medium text-danger">{t("rejectedTitle")}</p>
+            <p className="mt-1 break-words font-mono text-[11px] text-foreground/90" dir="ltr">
+              {lastRejection}
+            </p>
+          </div>
+        )}
 
         {showForm ? (
           <form onSubmit={onSave} className="mt-2 space-y-4">

@@ -21,7 +21,8 @@ let unsubscribeLocal: (() => void) | null = null
 const store = () => useRunsStore.getState()
 
 function onError(error: GenerationError) {
-  if (error.code === "missing_key" || error.code === "invalid_key") useKeyDialog.getState().setOpen(true)
+  if (error.code === "missing_key") useKeyDialog.getState().setOpen(true)
+  else if (error.code === "invalid_key") useKeyDialog.getState().reject(error.message)
 }
 
 /** Loads history once and resumes polling for anything still running. */

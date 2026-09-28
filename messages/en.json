@@ -94,7 +94,8 @@
     "close": "Close",
     "saved": "API key saved",
     "removed": "API key removed",
-    "savedHint": "A key is saved in this browser (httpOnly cookie). Saving does not prove it is valid: the first generation will tell you."
+    "savedHint": "A key is saved in this browser (httpOnly cookie). Saving does not prove it is valid: the first generation will tell you.",
+    "rejectedTitle": "Higgsfield rejected the last generation with this reason:"
   },
   "studio": {
     "model": "Model",
