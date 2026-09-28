@@ -133,13 +133,14 @@ export function Composer({ surface }: { surface: Surface }) {
     <Card className="space-y-5 p-4 sm:p-5">
       <PromptDialog draft={promptDraft} onClose={() => setPromptDraft(null)} />
       <section className="space-y-2">
-        <h2 className="text-xs font-medium text-muted">{t("model")}</h2>
+        <h2 className="flex items-baseline gap-2 text-xs font-medium text-muted"><span className="font-display text-[13px] italic text-accent">01</span>{t("model")}</h2>
         <ModelPicker surface={surface} value={model.id} onChange={setModel} disabled={disabledModels} />
       </section>
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <label htmlFor={`prompt-${surface}`} className="text-xs font-medium text-muted">
+          <label htmlFor={`prompt-${surface}`} className="flex items-baseline gap-2 text-xs font-medium text-muted">
+            <span className="font-display text-[13px] italic text-accent">02</span>
             {t("prompt")}
           </label>
           <div className="flex items-center gap-1">
@@ -184,13 +185,13 @@ export function Composer({ surface }: { surface: Surface }) {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-xs font-medium text-muted">{t("references")}</h2>
+        <h2 className="flex items-baseline gap-2 text-xs font-medium text-muted"><span className="font-display text-[13px] italic text-accent">03</span>{t("references")}</h2>
         <References model={model} media={media} onChange={setMedia} />
       </section>
 
       {Object.keys(model.settings).length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-medium text-muted">{t("settings")}</h2>
+          <h2 className="flex items-baseline gap-2 text-xs font-medium text-muted"><span className="font-display text-[13px] italic text-accent">04</span>{t("settings")}</h2>
           <SettingsPanel model={model} values={rawSettings} onChange={setSetting} />
         </section>
       )}
@@ -236,8 +237,8 @@ export function Composer({ surface }: { surface: Surface }) {
         <Button size="lg" className="w-full" onClick={() => void generate()} disabled={submitting || !check.ready} data-testid="generate">
           {submitting ? <Loader2 className="animate-spin" /> : <Sparkles />}
           {submitting ? t("generating") : t("generate")}
-          <kbd className="ms-auto hidden text-[10px] opacity-70 sm:inline" dir="ltr">
-            {t("shortcut")}
+          <kbd className="ms-auto hidden text-[10px] opacity-70 sm:inline">
+            <bdi dir="ltr">{t("shortcut")}</bdi>
           </kbd>
         </Button>
       )}

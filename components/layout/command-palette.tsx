@@ -94,8 +94,8 @@ export function CommandPalette() {
                       <item.icon />
                       {t(`nav.${item.key}`)}
                       {item.shortcut && (
-                        <kbd className="ms-auto text-[10px] text-muted" dir="ltr">
-                          ⌘{item.shortcut}
+                        <kbd className="ms-auto text-[10px] text-muted">
+                          <bdi dir="ltr">⌘{item.shortcut}</bdi>
                         </kbd>
                       )}
                     </Command.Item>

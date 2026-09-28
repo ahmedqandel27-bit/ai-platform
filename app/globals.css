@@ -3,7 +3,8 @@
 /*
  * Design tokens — dark, premium, one electric accent (violet → cyan).
  * The app is dark-only by design; tokens live here so the palette can be
- * tuned in one place.
+ * tuned in one place. The accent is used sparingly: primary actions, the
+ * active state and one highlighted word per headline.
  */
 :root {
   --background: #07070a;
@@ -38,6 +39,8 @@
   --color-warning: var(--warning);
 
   --font-sans: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-latin), var(--font-display-arabic), ui-serif, Georgia, serif;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
   --radius-xl: 0.9rem;
   --radius-2xl: 1.25rem;
 }
@@ -45,6 +48,12 @@
 /* Arabic text gets the Arabic font first. */
 html[lang="ar"] {
   --font-sans: var(--font-arabic), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-arabic), var(--font-display-latin), ui-serif, serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -56,6 +65,41 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Film grain over everything: breaks up flat gradients, invisible until it's gone. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* One consistent, visible focus ring for keyboard users only. */
+:focus-visible {
+  outline: 2px solid rgb(167 139 250 / 0.7);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Ambient glow behind the whole app. */
@@ -76,6 +120,22 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Editorial display type: headlines and numerals. */
+@utility font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Small, wide-tracked label above a headline ("01 — CREATE"). */
+@utility eyebrow {
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 @utility bg-gradient-accent {
@@ -107,4 +167,23 @@ body {
 * {
   scrollbar-width: thin;
   scrollbar-color: rgb(255 255 255 / 0.12) transparent;
+}
+
+/* Arabic letters join: never track them apart or change their case. */
+html[lang="ar"] .eyebrow {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 12px;
+}
+html[lang="ar"] .font-display {
+  letter-spacing: 0;
+}
+
+/* Emphasis in display type: italic in Latin; Arabic has no true italic, so it keeps the accent colour only. */
+.font-display em {
+  font-style: italic;
+  padding-inline-end: 0.06em; /* italic overhang would clip the gradient */
+}
+html[lang="ar"] em {
+  font-style: normal;
 }

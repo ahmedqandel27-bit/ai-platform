@@ -156,14 +156,14 @@ export function PromptLibrary() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-testid="prompt-cards">
           {cards.map((card) => (
-            <article key={card.key} className="glass flex flex-col rounded-2xl p-4" data-testid="prompt-card">
+            <article key={card.key} className="glass flex flex-col rounded-2xl p-5 transition-[transform,border-color] duration-300 ease-out hover:-translate-y-0.5 hover:border-border-strong" data-testid="prompt-card">
               <div className="flex items-start gap-2">
                 {card.surface === "video" ? (
                   <Clapperboard className="mt-0.5 size-4 shrink-0 text-accent" />
                 ) : (
                   <ImageIcon className="mt-0.5 size-4 shrink-0 text-accent" />
                 )}
-                <h3 className="min-w-0 flex-1 text-sm font-medium" dir="auto">
+                <h3 className="font-display min-w-0 flex-1 text-xl leading-tight" dir="auto">
                   {card.title}
                 </h3>
               </div>

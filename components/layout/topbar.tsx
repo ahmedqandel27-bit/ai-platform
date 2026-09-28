@@ -30,8 +30,8 @@ export function Topbar({ email }: { email: string | null }) {
       >
         <Search className="size-4 shrink-0" />
         <span className="truncate">{t("search")}</span>
-        <kbd className="ms-auto hidden rounded border border-border px-1.5 text-[10px] sm:inline" dir="ltr">
-          ⌘K
+        <kbd className="ms-auto hidden rounded border border-border px-1.5 text-[10px] sm:inline">
+          <bdi dir="ltr">⌘K</bdi>
         </kbd>
       </button>
 

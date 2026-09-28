@@ -37,15 +37,22 @@ export function NavLinks({ collapsed = false, onNavigate }: { collapsed?: boolea
           <motion.span
             layoutId={onNavigate ? "nav-active-mobile" : "nav-active"}
             className="absolute inset-0 rounded-xl border border-border-strong bg-white/[0.05]"
-            transition={{ type: "spring", stiffness: 500, damping: 40 }}
-          />
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <span className="bg-gradient-accent absolute inset-y-2.5 start-0 w-0.5 rounded-full" />
+          </motion.span>
         )}
-        <Icon className={cn("relative size-[18px] shrink-0", active && "text-accent")} />
+        <Icon className={cn("relative size-[18px] shrink-0 transition-colors", active && "text-accent")} />
         {!collapsed && <span className="relative truncate">{t(item.key)}</span>}
-        {!collapsed && item.shortcut && (
-          <kbd className="relative ms-auto hidden text-[10px] text-muted/60 lg:inline" dir="ltr">
-            ⌘{item.shortcut}
-          </kbd>
+        {!collapsed && (
+          <span
+            className={cn(
+              "font-display relative ms-auto text-[13px] italic transition-colors",
+              active ? "text-accent" : "text-muted/40 group-hover:text-muted",
+            )}
+          >
+            {String(NAV_ITEMS.indexOf(item) + 1).padStart(2, "0")}
+          </span>
         )}
       </Link>
     );
@@ -64,7 +71,7 @@ export function NavLinks({ collapsed = false, onNavigate }: { collapsed?: boolea
       {(["create", "manage"] as const).map((group) => (
         <div key={group} className="flex flex-col gap-1">
           {!collapsed && (
-            <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wider text-muted/60">{t(group)}</p>
+            <p className="eyebrow px-3 pb-2 !text-muted/60">{t(group)}</p>
           )}
           {NAV_ITEMS.filter((i) => i.group === group).map(renderItem)}
         </div>

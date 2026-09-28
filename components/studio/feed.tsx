@@ -44,7 +44,7 @@ export function Feed({
           <div className="grid size-12 place-items-center rounded-2xl border border-border-strong bg-surface-2">
             <Icon className="size-5 text-accent" />
           </div>
-          <p className="font-medium">{empty.title}</p>
+          <p className="font-display text-2xl">{empty.title}</p>
           <p className="text-sm text-muted">{empty.body}</p>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { Sidebar } from "./sidebar";
 import { MobileNav } from "./mobile-nav";
 import { Topbar } from "./topbar";
 import { CommandPalette } from "./command-palette";
+import { BottomNav } from "./bottom-nav";
 import { KeyDialog } from "@/components/studio/key-dialog";
 import { RunsBootstrap } from "@/components/studio/runs-bootstrap";
 
@@ -45,8 +46,9 @@ export async function AppShell({ email, children }: { email: string | null; chil
           </Link>
         )}
         <Topbar email={email} />
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="flex-1 px-4 pb-28 pt-8 sm:px-6 lg:px-10 lg:pb-12 lg:pt-10">{children}</main>
       </div>
+      <BottomNav />
     </div>
   );
 }

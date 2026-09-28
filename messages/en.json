@@ -53,7 +53,8 @@
     "language": "العربية",
     "signOut": "Sign out",
     "account": "Account",
-    "menu": "Menu"
+    "menu": "Menu",
+    "more": "More"
   },
   "palette": {
     "placeholder": "Type a command or search…",
@@ -278,7 +279,11 @@
     "useRecipe": "Use",
     "deleteRecipe": "Delete",
     "recipeIntro": "Recipe",
-    "connectKey": "Connect your Higgsfield API key to run plans."
+    "connectKey": "Connect your Higgsfield API key to run plans.",
+    "heroTitleA": "What should we",
+    "heroTitleB": "make today?",
+    "heroEyebrow": "Super Computer",
+    "tryOne": "Or start from one of these"
   },
   "common": {
     "needsSupabaseTitle": "Needs the database",
@@ -410,5 +415,24 @@
     "perSecond": "Credits / sec",
     "markup": "Reseller markup (%)",
     "saveModels": "Save model settings"
+  },
+  "brand": {
+    "eyebrow": "Private studio · by invitation",
+    "headlineA": "Every top AI model.",
+    "headlineB": "One studio.",
+    "private": "A private workspace for your team. Every generation is tracked to its author.",
+    "pillars": {
+      "superComputer": "Describe it. The Super Computer plans and makes it.",
+      "video": "Video from text, images and references.",
+      "image": "Images, styles and consistent characters."
+    }
+  },
+  "errors": {
+    "notFoundTitle": "This page isn't here.",
+    "notFoundBody": "The link may be old, or the page moved. Everything you made is still in your library.",
+    "home": "Back to the studio",
+    "crashTitle": "Something broke on our side.",
+    "crashBody": "Your generations are safe. Try again — if it keeps happening, send us the reference below.",
+    "retry": "Try again"
   }
 }

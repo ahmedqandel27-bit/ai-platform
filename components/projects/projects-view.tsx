@@ -77,14 +77,14 @@ export function ProjectsView() {
         <div className="grid min-h-60 place-items-center rounded-2xl border border-dashed border-border-strong p-10 text-center">
           <div className="flex max-w-sm flex-col items-center gap-3">
             <FolderKanban className="size-6 text-accent" />
-            <p className="font-medium">{t("emptyTitle")}</p>
+            <p className="font-display text-2xl">{t("emptyTitle")}</p>
             <p className="text-sm text-muted">{t("emptyBody")}</p>
           </div>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="project-list">
           {projects.map((project) => (
-            <div key={project.id} className="glass group relative rounded-2xl p-4 transition hover:border-border-strong">
+            <div key={project.id} className="glass group relative rounded-2xl p-5 transition-[transform,border-color] duration-300 ease-out hover:-translate-y-0.5 hover:border-border-strong">
               {editing === project.id ? (
                 <form
                   className="flex gap-2"
@@ -105,7 +105,7 @@ export function ProjectsView() {
                       <FolderKanban className="size-5 text-accent" />
                     </div>
                     <div className="min-w-0 flex-1 pe-8">
-                      <p className="truncate font-medium" dir="auto">
+                      <p className="font-display truncate text-xl" dir="auto">
                         {project.name}
                       </p>
                       <p className="text-xs text-muted">
