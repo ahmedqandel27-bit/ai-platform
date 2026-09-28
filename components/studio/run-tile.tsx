@@ -79,9 +79,10 @@ export function RunTile({ run, onOpen, readOnly = false }: { run: Run; onOpen: (
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="group relative overflow-hidden rounded-2xl border border-border bg-surface"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="group relative overflow-hidden rounded-2xl border border-border bg-surface transition-[border-color,box-shadow] duration-300 hover:border-border-strong hover:shadow-[0_20px_60px_-30px_rgb(0_0_0/0.9)]"
       style={{ aspectRatio: aspectOf(run.settings, run.surface === "image" ? "1:1" : "16:9") }}
       data-testid="run-tile"
       data-status={run.status}
@@ -95,13 +96,12 @@ export function RunTile({ run, onOpen, readOnly = false }: { run: Run; onOpen: (
               loop
               playsInline
               preload="metadata"
-              className="size-full object-cover"
+              className="size-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]"
               onMouseEnter={(e) => void e.currentTarget.play().catch(() => {})}
               onMouseLeave={(e) => e.currentTarget.pause()}
             />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element -- remote generated media
-            <img src={images[0]!.url} alt={run.prompt} loading="lazy" className="size-full object-cover" />
+            <FadeImage src={images[0]!.url} alt={run.prompt} />
           )}
           {images.length > 1 && (
             <span className="absolute end-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] text-white">
@@ -186,6 +186,25 @@ export function RunTile({ run, onOpen, readOnly = false }: { run: Run; onOpen: (
         </div>
       </div>
     </motion.div>
+  );
+}
+
+/** Media fades in once decoded (no pop-in), then drifts closer on hover. */
+function FadeImage({ src, alt }: { src: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- remote generated media
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onLoad={() => setLoaded(true)}
+      className={cn(
+        "size-full object-cover transition-[opacity,transform] duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]",
+        loaded ? "opacity-100" : "opacity-0",
+      )}
+    />
   );
 }
 

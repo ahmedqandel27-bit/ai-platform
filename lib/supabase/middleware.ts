@@ -3,7 +3,8 @@ import { createServerClient } from "@supabase/ssr";
 import { isSupabaseConfigured, publicEnv } from "@/lib/env";
 
 /** Routes reachable without a session. */
-const PUBLIC_PATHS = ["/login", "/auth", "/api/webhooks"];
+// Brand assets must stay public: link previews and home-screen installs fetch them signed out.
+const PUBLIC_PATHS = ["/login", "/auth", "/api/webhooks", "/opengraph-image", "/apple-icon", "/icon.svg", "/manifest.webmanifest"];
 
 /**
  * Refreshes the Supabase session cookie on every request and

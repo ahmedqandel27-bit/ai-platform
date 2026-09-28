@@ -84,12 +84,12 @@ export function LoginForm({ configured }: { configured: boolean }) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
       className="w-full max-w-sm"
     >
-      <Card className="p-7">
-        <h1 className="text-lg font-semibold">{mode === "signIn" ? t("welcome") : t("createAccount")}</h1>
-        <p className="mt-1 text-sm text-muted">{t("subtitle")}</p>
+      <Card className="p-8">
+        <h2 className="font-display text-3xl leading-tight">{mode === "signIn" ? t("welcome") : t("createAccount")}</h2>
+        <p className="mt-1.5 text-sm text-muted">{t("subtitle")}</p>
 
         {!configured ? (
           <div className="mt-6 space-y-4">
