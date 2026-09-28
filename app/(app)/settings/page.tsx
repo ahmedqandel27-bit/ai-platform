@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
-import { WorkspacePlaceholder } from "@/components/common/workspace-placeholder";
+import { getTranslations } from "next-intl/server";
+import { Settings } from "lucide-react";
+import { PageHeader } from "@/components/common/page-header";
+import { SettingsView } from "@/components/settings/settings-view";
 
 export const metadata: Metadata = { title: "Settings" };
 
-export default function Page() {
-  return <WorkspacePlaceholder navKey="settings" phase={6} />;
+export default async function SettingsPage() {
+  const t = await getTranslations("pages.settings");
+  return (
+    <div className="mx-auto max-w-5xl">
+      <PageHeader icon={Settings} title={t("title")} description={t("description")} />
+      <SettingsView />
+    </div>
+  );
 }

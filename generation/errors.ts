@@ -19,6 +19,9 @@ export type GenerationErrorCode =
   | "timeout"
   | "platform_error"
   | "unauthenticated"
+  | "model_disabled"
+  | "budget_exceeded"
+  | "daily_cap_exceeded"
 
 export type GenerationError = { code: GenerationErrorCode; message: string }
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { KeyRound, Loader2, Sparkles, WandSparkles } from "lucide-react";
+import { BookmarkPlus, KeyRound, Loader2, Sparkles, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
 import { MODELS, parseSettings } from "@/generation/catalog";
 import { inferInputMode } from "@/generation/catalog/media-inputs";
@@ -14,6 +14,10 @@ import { useKeyDialog } from "@/generation/stores/key-dialog";
 import { toPlatform } from "@/generation/to-platform";
 import { submitRun } from "@/lib/studio/runs-controller";
 import { enhancePrompt, getAssistantStatus } from "@/lib/supercomputer/actions";
+import { estimateCost } from "@/lib/team/cost";
+import { useProjects, useTeam } from "@/lib/team/use-team";
+import { NativeSelect } from "@/components/ui/native-select";
+import { PromptDialog, type PromptDraft } from "@/components/prompts/prompt-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,12 +30,46 @@ import { SettingsPanel } from "./settings-panel";
 export function Composer({ surface }: { surface: Surface }) {
   const t = useTranslations("studio");
   const useComposer = composerFor(surface);
-  const { model: modelId, prompt, settingsByModel, media, setModel, setPrompt, setSetting, setMedia } = useComposer();
-  const model = MODELS.find((m) => m.id === modelId && m.surface === surface) ?? MODELS.find((m) => m.surface === surface);
+  const {
+    model: modelId,
+    prompt,
+    settingsByModel,
+    media,
+    explicitModel,
+    projectId,
+    setModel,
+    applyDefaultModel,
+    setProjectId,
+    setPrompt,
+    setSetting,
+    setMedia,
+  } = useComposer();
+  const { data: team } = useTeam();
+  const { data: projects } = useProjects();
+  const disabledModels = useMemo(() => team?.settings.disabledModels ?? [], [team]);
+  const available = MODELS.filter((m) => m.surface === surface && !disabledModels.includes(m.id));
+  const model = available.find((m) => m.id === modelId) ?? available[0];
+
+  // Team rules: a disabled model falls back to the team default; the default
+  // also applies until the user picks a model themselves.
+  useEffect(() => {
+    if (!team) return;
+    const fallback = team.settings.defaultModels[surface];
+    const current = MODELS.find((m) => m.id === modelId);
+    const blocked = !current || disabledModels.includes(modelId);
+    if (fallback && (blocked || !explicitModel) && fallback !== modelId) applyDefaultModel(fallback);
+    else if (blocked && available[0] && available[0].id !== modelId) applyDefaultModel(available[0].id);
+  }, [team, surface, modelId, explicitModel, disabledModels, available, applyDefaultModel]);
+
+  // Forget a project that was deleted or belongs to another team.
+  useEffect(() => {
+    if (projectId && projects && !projects.some((p) => p.id === projectId)) setProjectId(null);
+  }, [projectId, projects, setProjectId]);
   const { data: keyStatus } = useKeyStatus();
   const openKeyDialog = useKeyDialog((s) => s.setOpen);
   const [submitting, setSubmitting] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
+  const [promptDraft, setPromptDraft] = useState<PromptDraft | null>(null);
   const { data: assistant } = useQuery({ queryKey: ["assistant-status"], queryFn: () => getAssistantStatus(), staleTime: 5 * 60_000 });
 
   const rawSettings = useMemo(() => (model ? (settingsByModel[model.id] ?? {}) : {}), [model, settingsByModel]);
@@ -53,6 +91,7 @@ export function Composer({ surface }: { surface: Surface }) {
   }, [model, rawSettings, media, prompt]);
 
   if (!model) return null;
+  const cost = team ? estimateCost(model, parseSettingsSafe(model, rawSettings), team.settings.modelCosts) : null;
 
   async function enhance() {
     if (!model || !prompt.trim() || enhancing) return;
@@ -83,6 +122,7 @@ export function Composer({ surface }: { surface: Surface }) {
         settings,
         media,
         ...(inputMode ? { inputMode } : {}),
+        ...(projectId ? { projectId } : {}),
       });
     } finally {
       setSubmitting(false);
@@ -91,9 +131,10 @@ export function Composer({ surface }: { surface: Surface }) {
 
   return (
     <Card className="space-y-5 p-4 sm:p-5">
+      <PromptDialog draft={promptDraft} onClose={() => setPromptDraft(null)} />
       <section className="space-y-2">
         <h2 className="text-xs font-medium text-muted">{t("model")}</h2>
-        <ModelPicker surface={surface} value={model.id} onChange={setModel} />
+        <ModelPicker surface={surface} value={model.id} onChange={setModel} disabled={disabledModels} />
       </section>
 
       <section className="space-y-2">
@@ -101,6 +142,17 @@ export function Composer({ surface }: { surface: Surface }) {
           <label htmlFor={`prompt-${surface}`} className="text-xs font-medium text-muted">
             {t("prompt")}
           </label>
+          <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setPromptDraft({ title: prompt.trim().slice(0, 60), body: prompt.trim(), tags: [], surface })}
+            disabled={!prompt.trim()}
+            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted hover:bg-white/5 hover:text-foreground disabled:opacity-40"
+            title={t("savePrompt")}
+          >
+            <BookmarkPlus className="size-3" />
+            {t("savePrompt")}
+          </button>
           {assistant?.textTools && (
             <button
               type="button"
@@ -113,6 +165,7 @@ export function Composer({ surface }: { surface: Surface }) {
               {t("enhance")}
             </button>
           )}
+          </div>
         </div>
         <Textarea
           id={`prompt-${surface}`}
@@ -142,6 +195,32 @@ export function Composer({ surface }: { surface: Surface }) {
         </section>
       )}
 
+      {team && projects && projects.length > 0 && (
+        <section className="space-y-2">
+          <label htmlFor={`project-${surface}`} className="text-xs font-medium text-muted">
+            {t("project")}
+          </label>
+          <NativeSelect
+            id={`project-${surface}`}
+            value={projectId ?? ""}
+            onChange={(e) => setProjectId(e.target.value || null)}
+          >
+            <option value="">{t("noProject")}</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </section>
+      )}
+
+      {team && cost !== null && (
+        <p className="text-xs text-muted" data-testid="cost-estimate">
+          {t("estimate", { credits: cost })}
+        </p>
+      )}
+
       {check.problem && (
         <p role="alert" className="rounded-lg border border-warning/25 bg-warning/10 p-2.5 text-xs text-warning">
           {check.problem}
@@ -164,4 +243,12 @@ export function Composer({ surface }: { surface: Surface }) {
       )}
     </Card>
   );
+}
+
+function parseSettingsSafe(model: Parameters<typeof parseSettings>[0], raw: Record<string, unknown>) {
+  try {
+    return parseSettings(model, raw);
+  } catch {
+    return {};
+  }
 }

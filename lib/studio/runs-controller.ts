@@ -59,8 +59,10 @@ export function teardownRuns() {
 }
 
 export async function submitRun(input: Omit<SubmitInput, "id">): Promise<Run> {
+  const { projectId, ...rest } = input
   const run: Run = {
-    ...input,
+    ...rest,
+    ...(projectId ? { projectId } : {}),
     id: crypto.randomUUID(),
     status: "submitting",
     createdAt: Date.now(),

@@ -21,6 +21,8 @@ type JobRow = {
   settings: Record<string, unknown>
   media: MediaItem[]
   input_mode: string | null
+  project_id: string | null
+  cost: number | null
   status: RunStatus
   outputs: RunOutputs | null
   storage_paths: string[] | null
@@ -30,7 +32,7 @@ type JobRow = {
 }
 
 const COLUMNS =
-  "id, client_id, provider_request_id, surface, model_id, prompt, settings, media, input_mode, status, outputs, storage_paths, error, created_at, finished_at"
+  "id, client_id, provider_request_id, surface, model_id, prompt, settings, media, input_mode, project_id, cost, status, outputs, storage_paths, error, created_at, finished_at"
 
 export type NewJob = {
   userId: string
@@ -42,6 +44,9 @@ export type NewJob = {
   media: MediaItem[]
   inputMode?: string
   platformPath: string
+  teamId: string | null
+  projectId: string | null
+  cost: number | null
 }
 
 /**
@@ -63,6 +68,9 @@ export async function insertPendingJob(job: NewJob): Promise<{ jobId: string } |
       media: job.media,
       input_mode: job.inputMode ?? null,
       platform_path: job.platformPath,
+      team_id: job.teamId,
+      project_id: job.projectId,
+      cost: job.cost,
       status: "submitting",
     })
     .select("id")
@@ -74,6 +82,7 @@ export async function insertPendingJob(job: NewJob): Promise<{ jobId: string } |
       .from("jobs")
       .select(COLUMNS)
       .eq("client_id", job.clientId)
+      .eq("user_id", job.userId)
       .single()
     if (existing) return { duplicate: rowToRun(existing as JobRow) }
   }
@@ -93,11 +102,18 @@ export async function markJobError(jobId: string, error: GenerationError) {
     .eq("id", jobId)
 }
 
-/** Returns the subset of request ids owned by the signed-in user (RLS filters the rest). */
-export async function ownedRequestIds(requestIds: string[]): Promise<Set<string>> {
+/**
+ * Returns the subset of request ids created by this user. Teammates can SEE
+ * jobs in shared projects, but only the creator may poll or cancel them.
+ */
+export async function ownedRequestIds(userId: string, requestIds: string[]): Promise<Set<string>> {
   if (!requestIds.length) return new Set()
   const supabase = await createClient()
-  const { data } = await supabase.from("jobs").select("provider_request_id").in("provider_request_id", requestIds)
+  const { data } = await supabase
+    .from("jobs")
+    .select("provider_request_id")
+    .eq("user_id", userId)
+    .in("provider_request_id", requestIds)
   return new Set((data ?? []).map((row) => row.provider_request_id as string))
 }
 
@@ -135,20 +151,57 @@ export async function saveStoragePaths(jobId: string, paths: string[]) {
   await supabase.from("jobs").update({ storage_paths: paths }).eq("id", jobId)
 }
 
-export async function deleteJob(clientId: string) {
+export async function deleteJob(userId: string, clientId: string) {
   const supabase = await createClient()
-  const { data } = await supabase.from("jobs").delete().eq("client_id", clientId).select("storage_paths")
+  const { data } = await supabase
+    .from("jobs")
+    .delete()
+    .eq("client_id", clientId)
+    .eq("user_id", userId)
+    .select("storage_paths")
   const paths = (data?.[0]?.storage_paths as string[] | null) ?? []
   if (paths.length) await supabase.storage.from(OUTPUTS_BUCKET).remove(paths)
 }
 
 export const OUTPUTS_BUCKET = "outputs"
 
-/** Most recent jobs; outputs copied to storage are returned as 1-hour signed URLs. */
-export async function listJobs(limit = 200): Promise<Run[]> {
+/** Files (or unfiles) one of the user's jobs under a project of their team. */
+export async function setJobProject(userId: string, clientId: string, projectId: string | null, teamId: string) {
   const supabase = await createClient()
-  const { data } = await supabase.from("jobs").select(COLUMNS).order("created_at", { ascending: false }).limit(limit)
-  const rows = (data ?? []) as JobRow[]
+  const { error } = await supabase
+    .from("jobs")
+    .update({ project_id: projectId, team_id: teamId })
+    .eq("client_id", clientId)
+    .eq("user_id", userId)
+  if (error) throw new Error(error.message)
+}
+
+/** The user's own recent jobs; outputs copied to storage come back as 1-hour signed URLs. */
+export async function listJobs(userId: string, limit = 200): Promise<Run[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("jobs")
+    .select(COLUMNS)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+  return withSignedOutputs((data ?? []) as JobRow[])
+}
+
+/** Everything filed under a project, from every teammate (RLS: team members). */
+export async function listProjectJobs(projectId: string, limit = 300): Promise<Run[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("jobs")
+    .select(COLUMNS)
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+  return withSignedOutputs((data ?? []) as JobRow[])
+}
+
+async function withSignedOutputs(rows: JobRow[]): Promise<Run[]> {
+  const supabase = await createClient()
 
   const allPaths = rows.flatMap((row) => row.storage_paths ?? [])
   const signed = new Map<string, string>()
@@ -177,6 +230,8 @@ function rowToRun(row: JobRow): Run {
     settings: row.settings ?? {},
     media: row.media ?? [],
     ...(row.input_mode ? { inputMode: row.input_mode } : {}),
+    ...(row.project_id ? { projectId: row.project_id } : {}),
+    ...(row.cost !== null && row.cost !== undefined ? { cost: Number(row.cost) } : {}),
     status: row.status,
     ...(row.outputs ? { outputs: row.outputs } : {}),
     ...(row.error ? { error: row.error } : {}),

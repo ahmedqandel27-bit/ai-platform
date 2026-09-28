@@ -13,7 +13,13 @@ type ComposerState = {
   /** Settings remembered per model id. */
   settingsByModel: Record<string, Record<string, unknown>>
   media: MediaItem[]
+  /** True once the user picked a model themselves (else the team default applies). */
+  explicitModel: boolean
+  /** Project new generations are filed under (Supabase mode). */
+  projectId: string | null
   setModel: (model: string) => void
+  applyDefaultModel: (model: string) => void
+  setProjectId: (projectId: string | null) => void
   setPrompt: (prompt: string) => void
   setSetting: (key: string, value: unknown) => void
   setMedia: (media: MediaItem[]) => void
@@ -33,7 +39,11 @@ function createComposer(surface: Surface) {
         prompt: "",
         settingsByModel: {},
         media: [],
-        setModel: (model) => set({ model }),
+        explicitModel: false,
+        projectId: null,
+        setModel: (model) => set({ model, explicitModel: true }),
+        applyDefaultModel: (model) => set({ model }),
+        setProjectId: (projectId) => set({ projectId }),
         setPrompt: (prompt) => set({ prompt }),
         setSetting: (key, value) =>
           set((state) => ({
@@ -44,7 +54,13 @@ function createComposer(surface: Surface) {
           })),
         setMedia: (media) => set({ media }),
         load: ({ model, prompt, settings, media }) =>
-          set((state) => ({ model, prompt, media, settingsByModel: { ...state.settingsByModel, [model]: settings } })),
+          set((state) => ({
+            model,
+            prompt,
+            media,
+            explicitModel: true,
+            settingsByModel: { ...state.settingsByModel, [model]: settings },
+          })),
       }),
       {
         name: `nexus-composer-${surface}`,

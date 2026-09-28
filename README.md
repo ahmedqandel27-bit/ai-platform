@@ -7,9 +7,12 @@ Three workspaces:
 
 | Workspace | What it does |
 |---|---|
-| **Super Computer** | You describe what you want in chat. An agent plans the steps, picks the models, runs the whole pipeline and shows the cost. |
-| **Video Studio** | Text/image to video, start and end frames, camera moves, lip-sync and upscaling |
-| **Image Studio** | Text to image, style and character references, editing and upscaling |
+| **Super Computer** | You describe what you want in chat. An agent plans the steps, picks the models and runs the whole pipeline. |
+| **Video Studio** | Text or image to video, start and end frames, references, video edit and extend |
+| **Image Studio** | Text to image and image references |
+
+Around the workspaces: a **Library**, team **Projects**, a **Prompt library**, a **Usage and costs** dashboard with
+budgets, and team **Settings** (members, roles, daily caps, and which models are on, their defaults and costs).
 
 > The platform name lives in `lib/config.ts` (`APP_NAME`). Change it there to rename the app everywhere.
 
@@ -24,8 +27,8 @@ Three workspaces:
 | 3 | Image Studio (end-to-end) | ✅ Done |
 | 4 | Video Studio | ✅ Done |
 | 5 | Super Computer (planner, tools, pipeline runner, recipes) | ✅ Done |
-| 6 | Library ✅, projects, prompts, usage dashboard, team and admin settings | Partly done |
-| 7 | Final docs and deployment guide | — |
+| 6 | Library, projects, prompt library, usage dashboard, budgets, team and admin settings | ✅ Done |
+| 7 | Docs, database integration tests, deployment guide | ✅ Done |
 
 ## Tech stack
 
@@ -47,7 +50,14 @@ banner is shown, so you can look around the UI before setting anything up. Never
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **Project Settings → API**: copy the URL, the `anon` key and the `service_role` key into `.env.local`.
-3. **SQL Editor**: run each file in `supabase/migrations/` in order. You can also use `supabase db push` with the Supabase CLI.
+3. **SQL Editor**: run each file in `supabase/migrations/` **once, in order**. You can also use `supabase db push` with the Supabase CLI.
+
+   | File | Creates |
+   |---|---|
+   | `0001_profiles_teams.sql` | profiles, teams, members, roles, and the sign-up trigger |
+   | `0002_jobs_storage.sql` | generations (`jobs`) and the private `outputs` bucket |
+   | `0003_recipes.sql` | Super Computer recipes |
+   | `0004_team_projects_prompts_usage.sql` | projects, the prompt library, team settings, the usage and budget functions, and the member-management functions |
 4. **Authentication → URL Configuration**:
    - Site URL: `http://localhost:3000` (use your production URL later)
    - Redirect URLs: add `http://localhost:3000/auth/callback` and `https://YOUR-DOMAIN/auth/callback`
@@ -57,8 +67,9 @@ banner is shown, so you can look around the UI before setting anything up. Never
 Every new user automatically gets a profile and a personal team with the `owner` role
 (see the `handle_new_user` trigger).
 
-Then run `supabase/migrations/0002_jobs_storage.sql` too. It creates the `jobs` table and the private `outputs` bucket.
-After that, run `supabase/migrations/0003_recipes.sql`, which creates the Super Computer's saved recipes.
+**Adding teammates:** each person signs up first. An owner or admin then adds them by e-mail in
+**Settings → Members**. After that, their active team switches to the agency team; anyone in several teams
+can switch in Settings.
 
 ### 2. Higgsfield
 
@@ -71,7 +82,10 @@ Create a key at [open.higgsfield.ai/api-keys](https://open.higgsfield.ai/api-key
   generation does.
 - **Team key (optional):** put the complete key in `HF_API_KEY` on the server. Signed-in team members can then
   generate without pasting their own key, and a user's own key still takes priority. The team key is
-  **only used when Supabase auth is configured**, so every paid request is tied to a signed-in user.
+  **only used for signed-in users whose e-mail matches `HF_API_KEY_ALLOWED`**, a comma-separated list of
+  e-mails and/or `@domains` such as `@theviralempire.agency`. If the list is empty, nobody can use the team key.
+  This matters because Supabase allows anyone to sign up by default. For a fully private platform, also turn off
+  **Authentication → Sign In / Providers → Allow new users to sign up** after your team has joined.
 
 All platform calls go from the server to `HF_API_BASE_URL` (`https://api.higgsfield.ai`) with
 `Authorization: Key <api-key>`.
@@ -119,6 +133,21 @@ With an LLM configured, the studios also get **✨ Enhance prompt**.
 
 Not available in this workspace (no matching models in the installed catalog): upscaling, lip-sync and audio.
 The planner says so if asked. Cost estimates are not shown because model pricing could not be verified.
+
+## Team, projects, prompts and usage
+
+| Area | What it does |
+|---|---|
+| **Roles** | `owner`, `admin` and `member`. Owners and admins manage members, the budget and model settings. Only owners can add or remove owners, and a team always keeps at least one owner. |
+| **Projects** | Team-shared folders. Pick a project in the studio before generating, or file any generation later with the folder icon on its tile. Teammates see everything filed in a project, but only the creator can poll, cancel or delete their own generation. Unfiled generations stay private. |
+| **Prompt library** | 20 starter prompts (ads, UGC, product, cinematic, fashion), each in Arabic and English, plus the team's saved prompts. **Use** loads a prompt into the matching studio; **Save prompt** is also available in the studio composer. |
+| **Model settings** | Turn models on or off for the team: disabled models disappear from the pickers and Auto mode, and the server rejects them. Set the default model per studio, and the **credit cost** per generation and per second of video. |
+| **Budgets** | A monthly team budget and per-member daily caps, both in credits. **Every submit is checked on the server** against the estimated cost: a request that would exceed a limit is blocked before anything is sent to Higgsfield. A banner appears from 80%. |
+| **Usage** | Credits or generations per day, plus breakdowns by model, project and member. Admins see the whole team; members see only their own usage. |
+
+> **About costs:** Higgsfield pricing could not be verified from this environment, so the platform does not guess
+> it. Enter each model's credit cost in **Settings → Models**, copied from your Higgsfield dashboard. Until you do,
+> generations are counted but show 0 credits, and budgets and caps cannot block anything.
 
 ## How generation works
 
@@ -169,6 +198,8 @@ settings from these files, so a new model file is all it takes to add a model.
   The full flow was tested against a local mock of the documented contract.
 - Assumed, not verified: HTTP 402 means "insufficient credits", and `cancel` only succeeds while a request is queued.
 - **Webhooks are not implemented** because their signing scheme could not be verified. Status comes from polling.
+- The database layer (migrations, RLS, functions, sign-up, storage copy) and the full app flow were tested against a
+  **local Supabase stack**. Everything that talks to Higgsfield or Claude was tested against local mocks of their APIs.
 
 ## Environment variables
 
@@ -179,7 +210,8 @@ settings from these files, so a new model file is all it takes to add a model.
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only: job worker and webhook | **Yes** |
 | `NEXT_PUBLIC_SITE_URL` | OAuth redirects and webhooks | No |
 | `HF_API_BASE_URL` | Server only, `https://api.higgsfield.ai` | No |
-| `HF_API_KEY` | Optional team key (server only, used only for signed-in users) | **Yes** |
+| `HF_API_KEY` | Optional team key (server only) | **Yes** |
+| `HF_API_KEY_ALLOWED` | Who may use the team key: e-mails and/or `@domains` (empty = nobody) | No |
 | `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` | Super Computer planner and Enhance prompt (server only) | **Yes** |
 
 ## Project structure
@@ -201,6 +233,7 @@ generation/
   storage-copy.ts      Copies finished media into Supabase Storage
 components/
   supercomputer/       Chat thread, input, plan card, step card, side panel
+  projects/ prompts/ usage/ settings/   Phase 6 screens
   studio/              Composer, model picker, references, settings, feed, tiles, key dialog, library
   layout/              Sidebar, mobile drawer, topbar, jobs tray, command palette
   ui/                  Button, Input, Card, Badge, Dropdown, Tooltip
@@ -210,10 +243,13 @@ lib/
   llm/                 Planner providers: anthropic (SDK), openai-compatible, builtin
   supercomputer/       Plan schema + validation, system prompt, actions, runner, chat store
   studio/              Runs controller (submit / poll / cancel), media-role helpers
+  team/                Active team context, roles, model settings, cost estimates (server + client hook)
+  projects/ prompts/ usage/   Server actions (+ the 20 starter prompts)
   config.ts            APP_NAME + feature flags
   nav.ts               Navigation, the single source for sidebar and palette
   supabase/            Browser, server and middleware clients
-supabase/migrations/   SQL schema with RLS
+supabase/migrations/   SQL schema with RLS (0001–0004)
+tests/                 Unit tests; tests/db/ = Supabase integration test
 middleware.ts          Session refresh + auth guard
 ```
 
@@ -226,10 +262,32 @@ middleware.ts          Session refresh + auth guard
 
 ## Deploy to Vercel
 
-1. Push the repo to GitHub, then choose **Import Project** in Vercel.
-2. Add every variable from `.env.example` under **Settings → Environment Variables**.
+1. Push the repo to GitHub, then choose **Import Project** in Vercel. The framework (Next.js) is detected automatically.
+2. Add every variable from `.env.example` under **Settings → Environment Variables**. `NEXT_PUBLIC_*` values are
+   baked in at build time, so redeploy after changing them.
 3. Set `NEXT_PUBLIC_SITE_URL` to your production domain, and add `https://YOUR-DOMAIN/auth/callback`
-   to the Supabase redirect URLs.
+   to the Supabase redirect URLs (and to Google OAuth if you use it).
+4. Run the four migrations on the production Supabase project (see *Local setup → Supabase*).
+5. Sign up as the first user; you are the owner of your team. In **Settings**, rename the team, set the budget,
+   enter the model costs and add your teammates.
+
+## Testing
+
+| Command | What it covers |
+|---|---|
+| `npm test` | Unit tests: catalog mappings, API-key handling, upload contract, media roles, error codes, plan normalization, Auto model selection, keyword planner |
+| `npm run test:db` | Integration test against a **local** Supabase. It checks: sign-up bootstrap, invites, role guards, last-owner protection, settings write access, project sharing, private vs shared generations, usage scopes, budget/cap math and prompt permissions |
+| `npm run typecheck`, `npm run lint`, `npm run build` | Static checks |
+
+To run the database test locally, start Supabase first:
+
+```bash
+npx supabase start
+psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/migrations/0001_profiles_teams.sql   # …then 0002, 0003, 0004
+SUPABASE_URL=http://127.0.0.1:54321 ANON=<anon key from `npx supabase status`> npm run test:db
+```
+
+Never point `test:db` at production: it creates test users.
 
 ## Scripts
 
@@ -238,6 +296,7 @@ npm run dev        # dev server
 npm run build      # production build
 npm run lint       # ESLint
 npm run typecheck  # tsc --noEmit
-npm test           # node --test (catalog, credentials, uploads, studio logic)
+npm test           # unit tests: catalog, credentials, uploads, studio, planner
+npm run test:db    # security + budget integration test against a LOCAL Supabase (see tests/db/)
 npm run models     # regenerate the model barrel
 ```

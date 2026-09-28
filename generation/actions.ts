@@ -18,6 +18,8 @@ import { createPlatformClient, PlatformError, type GenerationStatus } from "./pl
 import { isTerminal, planeFromRun, type Run, type RunOutputs, type RunStatus } from "./run-types"
 import { getViewer, readUserKey, resolveCredentials, teamKeyAvailable, type Viewer } from "./server-credentials"
 import { copyOutputsToStorage } from "./storage-copy"
+import { estimateCost } from "@/lib/team/cost"
+import { getTeamContext } from "@/lib/team/server"
 import { toPlatform } from "./to-platform"
 
 /* ─── API key (Connect / Replace / Remove) ─────────────────────────────── */
@@ -79,7 +81,11 @@ export type SubmitInput = {
   settings: Record<string, unknown>
   media: MediaItem[]
   inputMode?: string
+  /** Optional project (must belong to the active team). */
+  projectId?: string | null
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type SubmitData = { requestId: string; status: RunStatus } | { duplicate: Run }
 
@@ -126,7 +132,29 @@ async function doSubmit(viewer: Viewer, input: SubmitInput): Promise<Result<Subm
     return { ok: false, error: toGenerationError(caught) }
   }
 
-  // 2. Record ownership + idempotency before the paid POST.
+  // 2. Team rules: disabled models, monthly budget, per-member daily cap.
+  let teamId: string | null = null
+  let cost: number | null = null
+  const projectId = typeof input.projectId === "string" && UUID.test(input.projectId) ? input.projectId : null
+  if (viewer.userId) {
+    const team = await getTeamContext()
+    if (team) {
+      teamId = team.team.id
+      if (team.settings.disabledModels.includes(input.model))
+        return fail("model_disabled", "This model is turned off for your team. Pick another one.")
+      cost = estimateCost(getModel(input.model), settings, team.settings.modelCosts)
+      if (cost !== null) {
+        const budget = team.team.monthlyBudget
+        if (budget !== null && team.spend.monthSpent + cost > budget)
+          return fail("budget_exceeded", `The team's monthly budget (${budget} credits) would be exceeded.`)
+        const cap = team.spend.dailyCap
+        if (cap !== null && team.spend.todaySpent + cost > cap)
+          return fail("daily_cap_exceeded", `Your daily limit (${cap} credits) would be exceeded.`)
+      }
+    }
+  }
+
+  // 3. Record ownership + idempotency before the paid POST.
   let jobId: string | null = null
   if (viewer.userId) {
     try {
@@ -140,6 +168,9 @@ async function doSubmit(viewer: Viewer, input: SubmitInput): Promise<Result<Subm
         media: input.media,
         ...(input.inputMode ? { inputMode: input.inputMode } : {}),
         platformPath: path,
+        teamId,
+        projectId: teamId ? projectId : null,
+        cost,
       })
       if ("duplicate" in inserted) return { ok: true, data: { duplicate: inserted.duplicate } }
       jobId = inserted.jobId
@@ -148,7 +179,7 @@ async function doSubmit(viewer: Viewer, input: SubmitInput): Promise<Result<Subm
     }
   }
 
-  // 3. Submit exactly once. No automatic retry: a timed-out POST may still
+  // 4. Submit exactly once. No automatic retry: a timed-out POST may still
   //    have been accepted (and billed) by the platform.
   try {
     const queued = await createPlatformClient(credentials).submit(path, body)
@@ -193,7 +224,7 @@ export async function getGenerationStatuses(data: { requestIds: string[] }): Pro
     return { ok: false, error: toGenerationError(caught) }
   }
 
-  const owned = viewer.userId ? await jobs.ownedRequestIds(requestIds) : null
+  const owned = viewer.userId ? await jobs.ownedRequestIds(viewer.userId, requestIds) : null
   const client = createPlatformClient(credentials)
 
   const entries = await Promise.all(
@@ -274,7 +305,7 @@ export async function cancelGeneration(data: { requestId: string }): Promise<Res
   if (!viewer) return fail("unauthenticated", "Sign in to continue.")
   const [requestId] = parseRequestIds([data?.requestId]) ?? []
   if (!requestId) return fail("invalid_input", "Invalid request id.")
-  if (viewer.userId && !(await jobs.ownedRequestIds([requestId])).has(requestId))
+  if (viewer.userId && !(await jobs.ownedRequestIds(viewer.userId, [requestId])).has(requestId))
     return fail("not_found", "Generation not found.")
   try {
     await createPlatformClient(await resolveCredentials(viewer)).cancel(requestId)
@@ -296,7 +327,7 @@ export async function listRuns(): Promise<Result<Run[] | null>> {
   const viewer = await getViewer()
   if (!viewer?.userId) return fail("unauthenticated", "Sign in to continue.")
   try {
-    return { ok: true, data: await jobs.listJobs() }
+    return { ok: true, data: await jobs.listJobs(viewer.userId) }
   } catch (caught) {
     return fail("platform_error", caught instanceof Error ? caught.message : "Could not load history.")
   }
@@ -307,8 +338,39 @@ export async function deleteRun(data: { id: string }): Promise<Result<null>> {
   const viewer = await getViewer()
   if (!viewer?.userId) return fail("unauthenticated", "Sign in to continue.")
   if (typeof data?.id !== "string" || !CLIENT_ID.test(data.id)) return fail("invalid_input", "Invalid id.")
-  await jobs.deleteJob(data.id)
+  await jobs.deleteJob(viewer.userId, data.id)
   return { ok: true, data: null }
+}
+
+/** Files one of your generations under a project of the active team (or removes it). */
+export async function setRunProject(data: { id: string; projectId: string | null }): Promise<Result<null>> {
+  if (!isSupabaseConfigured) return fail("invalid_input", "Projects need Supabase.")
+  const viewer = await getViewer()
+  if (!viewer?.userId) return fail("unauthenticated", "Sign in to continue.")
+  if (typeof data?.id !== "string" || !CLIENT_ID.test(data.id)) return fail("invalid_input", "Invalid id.")
+  if (data.projectId !== null && (typeof data.projectId !== "string" || !UUID.test(data.projectId)))
+    return fail("invalid_input", "Invalid project.")
+  const team = await getTeamContext()
+  if (!team) return fail("unauthenticated", "No team.")
+  try {
+    await jobs.setJobProject(viewer.userId, data.id, data.projectId, team.team.id)
+    return { ok: true, data: null }
+  } catch (caught) {
+    return fail("invalid_input", caught instanceof Error ? caught.message : "Could not move the generation.")
+  }
+}
+
+/** A project's generations from the whole team. */
+export async function listProjectRuns(data: { projectId: string }): Promise<Result<Run[]>> {
+  if (!isSupabaseConfigured) return { ok: true, data: [] }
+  const viewer = await getViewer()
+  if (!viewer?.userId) return fail("unauthenticated", "Sign in to continue.")
+  if (typeof data?.projectId !== "string" || !UUID.test(data.projectId)) return fail("invalid_input", "Invalid project.")
+  try {
+    return { ok: true, data: await jobs.listProjectJobs(data.projectId) }
+  } catch (caught) {
+    return fail("platform_error", caught instanceof Error ? caught.message : "Could not load the project.")
+  }
 }
 
 function parseRequestIds(value: unknown): string[] | null {

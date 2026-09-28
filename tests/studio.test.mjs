@@ -89,3 +89,17 @@ test("terminal statuses", () => {
   for (const s of ["completed", "failed", "nsfw", "canceled", "error"]) assert.ok(isTerminal(s));
   for (const s of ["submitting", "queued", "in_progress"]) assert.ok(!isTerminal(s));
 });
+
+test("team key allowlist fails closed and matches e-mails or @domains exactly", async () => {
+  const { isAllowedForTeamKey } = await import("../generation/team-key-policy.ts");
+  const list = "@theviralempire.agency, Freelancer@Gmail.com";
+  assert.equal(isAllowedForTeamKey("sara@theviralempire.agency", list), true);
+  assert.equal(isAllowedForTeamKey("SARA@TheViralEmpire.Agency", list), true);
+  assert.equal(isAllowedForTeamKey("freelancer@gmail.com", list), true);
+  assert.equal(isAllowedForTeamKey("someone@gmail.com", list), false);
+  assert.equal(isAllowedForTeamKey("x@evil-theviralempire.agency", list), false);
+  assert.equal(isAllowedForTeamKey("x@theviralempire.agency.evil.com", list), false);
+  assert.equal(isAllowedForTeamKey("sara@theviralempire.agency", ""), false);
+  assert.equal(isAllowedForTeamKey("sara@theviralempire.agency", undefined), false);
+  assert.equal(isAllowedForTeamKey(null, list), false);
+});

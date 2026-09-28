@@ -4,7 +4,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
-import { Ban, Clapperboard, Download, Loader2, RotateCcw, ShieldAlert, Trash2, TriangleAlert, Wand2, X } from "lucide-react";
+import { Ban, Check, Clapperboard, Download, FolderPlus, Loader2, RotateCcw, ShieldAlert, Trash2, TriangleAlert, Wand2, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { setRunProject } from "@/generation/actions";
+import { useRunsStore } from "@/generation/stores/runs";
+import { PROJECTS_QUERY, useProjects, useTeam } from "@/lib/team/use-team";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { MODELS } from "@/generation/catalog";
 import { isTerminal, type Run } from "@/generation/run-types";
@@ -26,7 +38,7 @@ export function useErrorText() {
 }
 
 /** The only renderer for one generation (feed, library, detail). */
-export function RunTile({ run, onOpen }: { run: Run; onOpen: (run: Run) => void }) {
+export function RunTile({ run, onOpen, readOnly = false }: { run: Run; onOpen: (run: Run) => void; readOnly?: boolean }) {
   const t = useTranslations("studio");
   const router = useRouter();
   const errorText = useErrorText();
@@ -151,17 +163,18 @@ export function RunTile({ run, onOpen }: { run: Run; onOpen: (run: Run) => void 
               <Clapperboard />
             </TileButton>
           )}
+          {!busy && !readOnly && <ProjectMenu run={run} />}
           {!busy && (
             <TileButton label={t("remix")} onClick={onRemix}>
               <Wand2 />
             </TileButton>
           )}
-          {!busy && run.status !== "completed" && (
+          {!busy && !readOnly && run.status !== "completed" && (
             <TileButton label={t("retry")} onClick={onRetry}>
               <RotateCcw />
             </TileButton>
           )}
-          {!busy && (
+          {!busy && !readOnly && (
             <TileButton label={t("delete")} onClick={() => void removeRun(run)}>
               <Trash2 />
             </TileButton>
@@ -169,6 +182,57 @@ export function RunTile({ run, onOpen }: { run: Run; onOpen: (run: Run) => void 
         </div>
       </div>
     </motion.div>
+  );
+}
+
+/** File the generation under one of the team's projects (Supabase mode). */
+function ProjectMenu({ run }: { run: Run }) {
+  const t = useTranslations("studio");
+  const { data: team } = useTeam();
+  const { data: projects } = useProjects();
+  const queryClient = useQueryClient();
+  if (!team || !projects?.length || !run.requestId) return null;
+
+  const move = async (projectId: string | null) => {
+    const result = await setRunProject({ id: run.id, projectId });
+    if (!result.ok) return toast.error(result.error.message);
+    useRunsStore.getState().patch(run.id, { projectId: projectId ?? undefined });
+    await queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY });
+    toast.success(projectId ? t("movedToProject") : t("removeFromProject"));
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          title={t("addToProject")}
+          aria-label={t("addToProject")}
+          onClick={(e) => e.stopPropagation()}
+          className="grid size-7 place-items-center rounded-lg bg-black/60 text-white backdrop-blur transition-colors hover:bg-black/85 [&_svg]:size-3.5"
+        >
+          <FolderPlus />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()} className="max-h-72 overflow-y-auto">
+        <DropdownMenuLabel>{t("addToProject")}</DropdownMenuLabel>
+        {projects.map((p) => (
+          <DropdownMenuItem key={p.id} onSelect={() => void move(p.id)}>
+            {run.projectId === p.id ? <Check /> : <FolderPlus />}
+            <span className="truncate">{p.name}</span>
+          </DropdownMenuItem>
+        ))}
+        {run.projectId && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => void move(null)}>
+              <X />
+              {t("removeFromProject")}
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

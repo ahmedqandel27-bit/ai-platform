@@ -25,6 +25,10 @@ export type Run = {
   settings: Record<string, unknown>
   media: MediaItem[]
   inputMode?: string
+  /** Project the run is filed under (Supabase mode). */
+  projectId?: string
+  /** Estimated credits (when the admin configured model costs). */
+  cost?: number
   status: RunStatus
   outputs?: RunOutputs
   error?: GenerationError

@@ -14,10 +14,13 @@ export function Feed({
   runs,
   hydrated,
   empty,
+  readOnly = false,
 }: {
   runs: Run[];
   hydrated: boolean;
   empty: { icon: LucideIcon; title: string; body: string };
+  /** Other people's generations (shared project): view, download, remix only. */
+  readOnly?: boolean;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = runs.find((r) => r.id === openId) ?? null;
@@ -52,7 +55,7 @@ export function Feed({
     <>
       <div className="columns-1 gap-3 sm:columns-2 xl:columns-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
         {runs.map((run) => (
-          <RunTile key={run.id} run={run} onOpen={(r) => setOpenId(r.id)} />
+          <RunTile key={run.id} run={run} readOnly={readOnly} onOpen={(r) => setOpenId(r.id)} />
         ))}
       </div>
       <RunDetail run={open} onClose={() => setOpenId(null)} />

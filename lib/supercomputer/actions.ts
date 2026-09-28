@@ -8,6 +8,7 @@ import { isSupabaseConfigured } from "@/lib/env"
 import { getLLM, resolveProviderId, type LLMProviderId } from "@/lib/llm"
 import { LLMError } from "@/lib/llm/types"
 import { createClient } from "@/lib/supabase/server"
+import { getTeamContext } from "@/lib/team/server"
 import { normalizePlan, type Plan } from "./plan"
 import { buildPlannerSystemPrompt } from "./system-prompt"
 
@@ -79,13 +80,14 @@ export async function planPipeline(input: unknown): Promise<AssistantResult<Plan
   const withNote = turns.map((t, i) => (i === turns.length - 1 ? { ...t, text: t.text + uploadNote } : t))
 
   try {
+    const disabled = (await getTeamContext())?.settings.disabledModels ?? []
     const llm = getLLM()
     const draft = await llm.plan({
-      system: buildPlannerSystemPrompt(),
+      system: buildPlannerSystemPrompt(disabled),
       turns: withNote,
       images: uploads.filter((u) => u.kind === "image").map((u) => u.url),
     })
-    return { ok: true, data: { reply: draft.reply.trim(), plan: normalizePlan(draft, uploads), provider: llm.id } }
+    return { ok: true, data: { reply: draft.reply.trim(), plan: normalizePlan(draft, uploads, disabled), provider: llm.id } }
   } catch (caught) {
     return fromCaught(caught)
   }

@@ -15,18 +15,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ModelIcon } from "./model-icon";
 
-/** Lists EVERY installed model for the surface, straight from the catalog. */
+/** Lists every installed model for the surface (minus any the team admin disabled). */
 export function ModelPicker({
   surface,
   value,
   onChange,
+  disabled = [],
 }: {
   surface: Surface;
   value: string;
   onChange: (id: string) => void;
+  /** Models the team admin turned off. */
+  disabled?: string[];
 }) {
   const t = useTranslations("studio");
-  const models = MODELS.filter((m) => m.surface === surface);
+  const models = MODELS.filter((m) => m.surface === surface && !disabled.includes(m.id));
   const current = models.find((m) => m.id === value) ?? models[0];
   if (!current) return null;
 

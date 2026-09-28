@@ -18,6 +18,7 @@ import {
 import { MODELS, getModel } from "@/generation/catalog";
 import { autoPick, coerceSettings, reconcileStep, surfaceOf, type Ref } from "@/lib/supercomputer/plan";
 import type { StepState } from "@/lib/supercomputer/store";
+import { useTeam } from "@/lib/team/use-team";
 import { cn } from "@/lib/utils";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,15 +51,17 @@ export function StepCard({
   const Icon = TOOL_ICON[step.tool];
   const surface = surfaceOf(step.tool);
   const model = step.model ? MODELS.find((m) => m.id === step.model) : undefined;
-  const surfaceModels = surface ? MODELS.filter((m) => m.surface === surface) : [];
+  const { data: team } = useTeam();
+  const disabled = team?.settings.disabledModels ?? [];
+  const surfaceModels = surface ? MODELS.filter((m) => m.surface === surface && !disabled.includes(m.id)) : [];
 
   const autoLabel = () => {
     if (!surface) return t("auto");
-    const picked = autoPick(surface, {
-      start: Boolean(step.startFrame),
-      end: Boolean(step.endFrame),
-      refs: step.references.length,
-    });
+    const picked = autoPick(
+      surface,
+      { start: Boolean(step.startFrame), end: Boolean(step.endFrame), refs: step.references.length },
+      disabled,
+    );
     return picked ? t("autoWith", { model: picked.label }) : t("auto");
   };
 
@@ -114,7 +117,7 @@ export function StepCard({
               dir="ltr"
               disabled={!editable}
               value={step.auto ? "auto" : step.model}
-              onChange={(e) => onChange({ ...reconcileStep(step, e.target.value), status: step.status } as StepState)}
+              onChange={(e) => onChange({ ...reconcileStep(step, e.target.value, disabled), status: step.status } as StepState)}
             >
               <option value="auto">{autoLabel()}</option>
               {surfaceModels.map((m) => (

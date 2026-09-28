@@ -5,13 +5,14 @@ import { cookies } from "next/headers"
 import { isSupabaseConfigured } from "@/lib/env"
 import { createClient } from "@/lib/supabase/server"
 import { MissingCredentialsError, PLATFORM_KEY_COOKIE, decodeCredentials } from "./credentials"
+import { isAllowedForTeamKey } from "./team-key-policy"
 
 export const DEFAULT_API_BASE_URL = "https://api.higgsfield.ai"
 
 export type CredentialSource = "user" | "team"
 
 /** Who is making the request. `userId` is null only in preview mode (no Supabase). */
-export type Viewer = { userId: string | null }
+export type Viewer = { userId: string | null; email?: string | null }
 
 export async function getViewer(): Promise<Viewer | null> {
   if (!isSupabaseConfigured) return { userId: null }
@@ -19,7 +20,7 @@ export async function getViewer(): Promise<Viewer | null> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  return user ? { userId: user.id } : null
+  return user ? { userId: user.id, email: user.email ?? null } : null
 }
 
 function teamKey(): string | null {
@@ -28,12 +29,18 @@ function teamKey(): string | null {
 }
 
 /**
- * The shared team key (`HF_API_KEY`) is only ever used for signed-in users, so
- * every request it pays for is attributable and ownership can be enforced.
+ * The shared team key (`HF_API_KEY`) is only used for signed-in users whose
+ * e-mail is on HF_API_KEY_ALLOWED, so every request it pays for is
+ * attributable and strangers who sign up cannot spend the agency's credits.
  * In preview mode (no auth) only a key the visitor pasted themselves works.
  */
 export function teamKeyAvailable(viewer: Viewer | null): boolean {
-  return Boolean(teamKey() && isSupabaseConfigured && viewer?.userId)
+  return Boolean(
+    teamKey() &&
+      isSupabaseConfigured &&
+      viewer?.userId &&
+      isAllowedForTeamKey(viewer.email, process.env.HF_API_KEY_ALLOWED),
+  )
 }
 
 export async function readUserKey(): Promise<string | null> {

@@ -67,8 +67,12 @@ export function accepts(model: ModelEntry, needs: { start: boolean; end: boolean
 }
 
 /** "Auto" mode: first model in catalog order (curated best-first) that fits the inputs. */
-export function autoPick(surface: Surface, needs: { start: boolean; end: boolean; refs: number }): ModelEntry | null {
-  const candidates = MODELS.filter((m) => m.surface === surface)
+export function autoPick(
+  surface: Surface,
+  needs: { start: boolean; end: boolean; refs: number },
+  disabled: readonly string[] = [],
+): ModelEntry | null {
+  const candidates = MODELS.filter((m) => m.surface === surface && !disabled.includes(m.id))
   return (
     candidates.find((m) => accepts(m, needs)) ??
     // Fewer references than asked is better than no model at all.
@@ -135,7 +139,7 @@ function nearestAspect(values: readonly string[], wanted: string): string | unde
  * catalog models only (else Auto), inputs that point at earlier image steps
  * or real uploads, settings within the model's schema, at most MAX_STEPS.
  */
-export function normalizePlan(draft: PlanDraft, uploads: UploadInfo[]): Plan {
+export function normalizePlan(draft: PlanDraft, uploads: UploadInfo[], disabled: readonly string[] = []): Plan {
   const steps: PlanStep[] = []
   const imageSteps = new Set<string>()
   const usedIds = new Set<string>()
@@ -179,16 +183,16 @@ export function normalizePlan(draft: PlanDraft, uploads: UploadInfo[]): Plan {
     let auto = true
     const requested = raw.model.trim()
     if (requested && requested !== "auto") {
-      const found = MODELS.find((m) => m.id === requested && m.surface === surface)
+      const found = MODELS.find((m) => m.id === requested && m.surface === surface && !disabled.includes(m.id))
       if (found && accepts(found, needs, prompt || "x")) {
         model = found
         auto = false
       }
     }
-    model ??= autoPick(surface, needs)
+    model ??= autoPick(surface, needs, disabled)
     if (!model && endFrame) {
       endFrame = null
-      model = autoPick(surface, { ...needs, end: false })
+      model = autoPick(surface, { ...needs, end: false }, disabled)
     }
     if (!model) continue
 
@@ -226,13 +230,14 @@ function dedupeRefs(refs: Ref[]): Ref[] {
 }
 
 /** Re-validates a step after the user edits it on the card (model switch, inputs). */
-export function reconcileStep(step: PlanStep, modelId: string | "auto"): PlanStep {
+export function reconcileStep(step: PlanStep, modelId: string | "auto", disabled: readonly string[] = []): PlanStep {
   const surface = surfaceOf(step.tool)
   if (!surface) return step
   const needs = { start: Boolean(step.startFrame), end: Boolean(step.endFrame), refs: step.references.length }
-  const explicit = modelId === "auto" ? undefined : MODELS.find((m) => m.id === modelId && m.surface === surface)
-  // Unknown or removed model ids fall back to Auto.
-  const picked = explicit ?? autoPick(surface, needs)
+  const explicit =
+    modelId === "auto" ? undefined : MODELS.find((m) => m.id === modelId && m.surface === surface && !disabled.includes(m.id))
+  // Unknown, removed or disabled model ids fall back to Auto.
+  const picked = explicit ?? autoPick(surface, needs, disabled)
   if (!picked) return step
   return {
     ...step,

@@ -7,8 +7,8 @@ import { MAX_STEPS } from "./plan"
  * byte-stable between requests (prompt-cache friendly) and never mentions a
  * model the app cannot run.
  */
-export function buildPlannerSystemPrompt(): string {
-  const catalog = MODELS.map((m) => {
+export function buildPlannerSystemPrompt(disabled: readonly string[] = []): string {
+  const catalog = MODELS.filter((m) => !disabled.includes(m.id)).map((m) => {
     const inputs = Object.entries(m.roles)
       .filter(([, n]) => (n ?? 0) > 0)
       .map(([role, n]) => `${role}×${n}`)
