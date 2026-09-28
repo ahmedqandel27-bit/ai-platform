@@ -48,8 +48,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   } catch (error) {
     const status = error instanceof PlatformError ? error.status : 502
     console.error("[upload] Could not prepare reference upload", { status })
+    const reason = error instanceof PlatformError ? ` ${error.message}` : ""
     if (status === 401 || status === 403)
-      return failure(status, "Higgsfield rejected the API key. Replace it in the sidebar and try again.")
+      return failure(status, `Higgsfield rejected the request.${reason}`)
     if (status === 429) return failure(429, "Higgsfield upload rate limit reached. Wait a moment and try again.")
     return failure(502, "Could not prepare the reference upload with Higgsfield. Try again.")
   }

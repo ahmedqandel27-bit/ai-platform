@@ -38,7 +38,7 @@ export function RunDetail({ run, onClose }: { run: Run | null; onClose: () => vo
                 ))}
               </div>
             ) : (
-              <p className="max-w-sm p-6 text-center text-sm text-muted">
+              <p className="max-w-md whitespace-pre-line p-6 text-center text-sm text-muted" dir="auto" data-testid="run-error">
                 {t(`status.${run.status}`)} — {errorText(run)}
               </p>
             )}

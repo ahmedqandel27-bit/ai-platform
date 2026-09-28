@@ -10,8 +10,8 @@ export class PlatformError extends Error {
   readonly status: number
   readonly body: unknown
 
-  constructor(status: number, body: unknown) {
-    super(messageFromBody(status, body))
+  constructor(status: number, body: unknown, host?: string) {
+    super(messageFromBody(status, body, host))
     this.name = "PlatformError"
     this.status = status
     this.body = body
@@ -79,7 +79,7 @@ export function createPlatformClient(options: PlatformClientOptions) {
       status: response.status,
       ...(path === UPLOAD_PATH || !VERBOSE ? {} : { body: payload }),
     })
-    if (!response.ok) throw new PlatformError(response.status, payload)
+    if (!response.ok) throw new PlatformError(response.status, payload, new URL(url).host)
     return payload
   }
 
@@ -178,8 +178,36 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-function messageFromBody(status: number, body: unknown): string {
-  const detail = asRecord(body).detail
-  if (typeof detail === "string" && detail) return detail
-  return `Platform request failed (${status})`
+/**
+ * Higgsfield's own reason plus the HTTP status and the host that answered,
+ * so a rejected request can be diagnosed from the UI (no secrets included).
+ */
+function messageFromBody(status: number, body: unknown, host?: string): string {
+  const where = host ? ` · ${host}` : ""
+  return `${describeBody(body) ?? "Platform request failed"} (HTTP ${status}${where})`
+}
+
+function describeBody(body: unknown): string | null {
+  if (typeof body === "string" && body.trim()) return body.trim().slice(0, 300)
+  const record = asRecord(body)
+  for (const key of ["detail", "message", "error"]) {
+    const value = record[key]
+    if (typeof value === "string" && value) return value.slice(0, 300)
+    if (value && typeof value === "object") {
+      const nested = asRecord(value)
+      if (typeof nested.message === "string" && nested.message) return nested.message.slice(0, 300)
+    }
+  }
+  // FastAPI-style validation errors: [{ loc, msg }]
+  if (Array.isArray(record.detail)) {
+    const msgs = record.detail
+      .map((item) => {
+        const entry = asRecord(item)
+        const loc = Array.isArray(entry.loc) ? entry.loc.join(".") : ""
+        return typeof entry.msg === "string" ? `${loc ? `${loc}: ` : ""}${entry.msg}` : null
+      })
+      .filter(Boolean)
+    if (msgs.length) return msgs.join("; ").slice(0, 300)
+  }
+  return null
 }
