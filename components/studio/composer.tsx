@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { KeyRound, Loader2, Sparkles } from "lucide-react";
+import { KeyRound, Loader2, Sparkles, WandSparkles } from "lucide-react";
+import { toast } from "sonner";
 import { MODELS, parseSettings } from "@/generation/catalog";
 import { inferInputMode } from "@/generation/catalog/media-inputs";
 import type { Surface } from "@/generation/catalog/types";
@@ -11,6 +13,7 @@ import { composerFor } from "@/generation/stores/composer";
 import { useKeyDialog } from "@/generation/stores/key-dialog";
 import { toPlatform } from "@/generation/to-platform";
 import { submitRun } from "@/lib/studio/runs-controller";
+import { enhancePrompt, getAssistantStatus } from "@/lib/supercomputer/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +31,8 @@ export function Composer({ surface }: { surface: Surface }) {
   const { data: keyStatus } = useKeyStatus();
   const openKeyDialog = useKeyDialog((s) => s.setOpen);
   const [submitting, setSubmitting] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
+  const { data: assistant } = useQuery({ queryKey: ["assistant-status"], queryFn: () => getAssistantStatus(), staleTime: 5 * 60_000 });
 
   const rawSettings = useMemo(() => (model ? (settingsByModel[model.id] ?? {}) : {}), [model, settingsByModel]);
 
@@ -48,6 +53,16 @@ export function Composer({ surface }: { surface: Surface }) {
   }, [model, rawSettings, media, prompt]);
 
   if (!model) return null;
+
+  async function enhance() {
+    if (!model || !prompt.trim() || enhancing) return;
+    setEnhancing(true);
+    const result = await enhancePrompt({ prompt, model: model.id });
+    setEnhancing(false);
+    if (result.ok) setPrompt(result.data.prompt);
+    else toast.error(result.error.message);
+  }
+
   const keyReady = Boolean(keyStatus?.userKey || keyStatus?.teamKey);
 
   async function generate() {
@@ -82,9 +97,23 @@ export function Composer({ surface }: { surface: Surface }) {
       </section>
 
       <section className="space-y-2">
-        <label htmlFor={`prompt-${surface}`} className="text-xs font-medium text-muted">
-          {t("prompt")}
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor={`prompt-${surface}`} className="text-xs font-medium text-muted">
+            {t("prompt")}
+          </label>
+          {assistant?.textTools && (
+            <button
+              type="button"
+              onClick={() => void enhance()}
+              disabled={!prompt.trim() || enhancing}
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-accent hover:bg-accent/10 disabled:opacity-40"
+              data-testid="enhance-prompt"
+            >
+              {enhancing ? <Loader2 className="size-3 animate-spin" /> : <WandSparkles className="size-3" />}
+              {t("enhance")}
+            </button>
+          )}
+        </div>
         <Textarea
           id={`prompt-${surface}`}
           rows={5}

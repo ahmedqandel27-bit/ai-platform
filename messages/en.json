@@ -189,7 +189,8 @@
       "timeout": "Timed out waiting for Higgsfield.",
       "submit_unknown": "Unclear whether this reached Higgsfield. Check your Higgsfield history before generating again.",
       "unauthenticated": "Sign in to continue."
-    }
+    },
+    "enhance": "Enhance prompt"
   },
   "jobs": {
     "title": "Jobs",
@@ -202,5 +203,74 @@
     "images": "Images",
     "videos": "Videos",
     "empty": "Your generated images and videos will appear here."
+  },
+  "sc": {
+    "heroTitle": "What should we make today?",
+    "heroBody": "Describe the campaign, product or idea. I'll plan the shots, pick the best models and generate everything when you press Run.",
+    "suggestions": [
+      "A 15-second ad for a luxury watch brand, 3 shots, plus a 4:5 poster",
+      "Animate my product photo into a 9:16 reel with a slow push-in",
+      "4 fashion editorial images in a neon Tokyo street, 3:4",
+      "Write 5 TikTok hooks and captions for a coffee brand launch"
+    ],
+    "placeholder": "Describe what you want… (Enter to send, Shift+Enter for a new line)",
+    "send": "Send",
+    "attach": "Attach files",
+    "planning": "Planning…",
+    "plannerClaude": "Planner: Claude",
+    "plannerCompat": "Planner: custom LLM",
+    "plannerBuiltin": "Basic planner — set an LLM key on the server for smarter plans",
+    "runAll": "Run all",
+    "stop": "Stop",
+    "running": "Running…",
+    "saveRecipe": "Save as recipe",
+    "recipeName": "Recipe name",
+    "saved": "Recipe saved",
+    "done": "Finished",
+    "generations": "{count, plural, one {# generation} other {# generations}}",
+    "creditsNote": "Each generation spends Higgsfield credits.",
+    "stepStatus": {
+      "idle": "Ready",
+      "running": "Running",
+      "done": "Done",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    },
+    "tools": {
+      "generate_image": "Image",
+      "generate_video": "Video",
+      "write_script": "Script"
+    },
+    "auto": "Auto",
+    "autoWith": "Auto · {model}",
+    "model": "Model",
+    "prompt": "Prompt",
+    "brief": "Brief",
+    "settings": "Settings",
+    "inputs": "Inputs",
+    "startFrom": "Start frame",
+    "endFrom": "End frame",
+    "referenceFrom": "Reference",
+    "fromStep": "from “{title}”",
+    "fromUpload": "your upload {n}",
+    "retry": "Retry step",
+    "removeStep": "Remove step",
+    "copy": "Copy",
+    "copied": "Copied",
+    "openLibrary": "Open in library",
+    "sessions": "Chats",
+    "newChat": "New chat",
+    "untitled": "New chat",
+    "deleteChat": "Delete chat",
+    "session": "This chat",
+    "assets": "Outputs",
+    "noAssets": "Outputs from this chat appear here.",
+    "runningNow": "{count} running",
+    "recipes": "Recipes",
+    "noRecipes": "Save a plan as a recipe to reuse it.",
+    "useRecipe": "Use",
+    "deleteRecipe": "Delete",
+    "recipeIntro": "Recipe",
+    "connectKey": "Connect your Higgsfield API key to run plans."
   }
 }

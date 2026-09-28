@@ -26,7 +26,7 @@ export function Studio({ surface }: { surface: Surface }) {
   }, [surface]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(340px,400px)_1fr]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(340px,400px)_minmax(0,1fr)]">
       <div className="lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto">
         <Composer surface={surface} />
       </div>

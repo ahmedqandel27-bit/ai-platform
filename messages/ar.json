@@ -189,7 +189,8 @@
       "timeout": "الوقت خلص واحنا مستنيين Higgsfield.",
       "submit_unknown": "مش واضح إذا الطلب وصل لـ Higgsfield ولا لأ. راجع الهيستوري على Higgsfield قبل ما تولّد تاني.",
       "unauthenticated": "سجّل دخولك علشان تكمّل."
-    }
+    },
+    "enhance": "حسّن البرومبت"
   },
   "jobs": {
     "title": "المهام",
@@ -202,5 +203,74 @@
     "images": "صور",
     "videos": "فيديوهات",
     "empty": "الصور والفيديوهات اللي هتولّدها هتظهر هنا."
+  },
+  "sc": {
+    "heroTitle": "نعمل إيه النهارده؟",
+    "heroBody": "اوصف الحملة أو المنتج أو الفكرة. هخطط اللقطات، وأختار أقوى موديلات، وأولّد كل حاجة لما تدوس تشغيل.",
+    "suggestions": [
+      "اعملي إعلان 15 ثانية لبراند ساعات فخم، 3 لقطات، وصورة بوستر 4:5",
+      "حرّك صورة المنتج بتاعي لريلز 9:16 بزووم بطيء",
+      "4 صور فاشون إيديتوريال في شارع نيون في طوكيو، 3:4",
+      "اكتبلي 5 هوكس وكابشنز تيك توك لإطلاق براند قهوة"
+    ],
+    "placeholder": "اكتب اللي عايزه… (Enter للإرسال، Shift+Enter لسطر جديد)",
+    "send": "إرسال",
+    "attach": "إرفاق ملفات",
+    "planning": "بيخطط…",
+    "plannerClaude": "المخطط: Claude",
+    "plannerCompat": "المخطط: LLM مخصص",
+    "plannerBuiltin": "مخطط بسيط — حط مفتاح LLM على السيرفر لخطط أذكى",
+    "runAll": "تشغيل الكل",
+    "stop": "إيقاف",
+    "running": "شغال…",
+    "saveRecipe": "احفظ كوصفة",
+    "recipeName": "اسم الوصفة",
+    "saved": "الوصفة اتحفظت",
+    "done": "خلصت",
+    "generations": "{count, plural, one {توليد واحد} other {# توليدات}}",
+    "creditsNote": "كل توليد بيصرف كريدت من Higgsfield.",
+    "stepStatus": {
+      "idle": "جاهزة",
+      "running": "شغالة",
+      "done": "خلصت",
+      "failed": "فشلت",
+      "skipped": "اتخطت"
+    },
+    "tools": {
+      "generate_image": "صورة",
+      "generate_video": "فيديو",
+      "write_script": "سكريبت"
+    },
+    "auto": "تلقائي",
+    "autoWith": "تلقائي · {model}",
+    "model": "الموديل",
+    "prompt": "البرومبت",
+    "brief": "المطلوب",
+    "settings": "الإعدادات",
+    "inputs": "المدخلات",
+    "startFrom": "أول فريم",
+    "endFrom": "آخر فريم",
+    "referenceFrom": "مرجع",
+    "fromStep": "من «{title}»",
+    "fromUpload": "الملف المرفوع {n}",
+    "retry": "أعد الخطوة",
+    "removeStep": "شيل الخطوة",
+    "copy": "نسخ",
+    "copied": "اتنسخ",
+    "openLibrary": "افتح في المكتبة",
+    "sessions": "المحادثات",
+    "newChat": "محادثة جديدة",
+    "untitled": "محادثة جديدة",
+    "deleteChat": "امسح المحادثة",
+    "session": "المحادثة دي",
+    "assets": "النتايج",
+    "noAssets": "نتايج المحادثة دي هتظهر هنا.",
+    "runningNow": "{count} شغالين",
+    "recipes": "الوصفات",
+    "noRecipes": "احفظ أي خطة كوصفة علشان تستخدمها تاني.",
+    "useRecipe": "استخدم",
+    "deleteRecipe": "امسح",
+    "recipeIntro": "وصفة",
+    "connectKey": "اربط Higgsfield API key علشان تشغّل الخطط."
   }
 }

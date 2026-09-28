@@ -23,7 +23,7 @@ Three workspaces:
 | 2 | Higgsfield client, model catalog, jobs table, polling, cancel, uploads, storage copy | ✅ Done (webhooks not wired, see below) |
 | 3 | Image Studio (end-to-end) | ✅ Done |
 | 4 | Video Studio | ✅ Done |
-| 5 | Super Computer (planner, tools, pipeline runner) | ⏳ Next |
+| 5 | Super Computer (planner, tools, pipeline runner, recipes) | ✅ Done |
 | 6 | Library ✅, projects, prompts, usage dashboard, team and admin settings | Partly done |
 | 7 | Final docs and deployment guide | — |
 
@@ -58,6 +58,7 @@ Every new user automatically gets a profile and a personal team with the `owner`
 (see the `handle_new_user` trigger).
 
 Then run `supabase/migrations/0002_jobs_storage.sql` too. It creates the `jobs` table and the private `outputs` bucket.
+After that, run `supabase/migrations/0003_recipes.sql`, which creates the Super Computer's saved recipes.
 
 ### 2. Higgsfield
 
@@ -74,6 +75,50 @@ Create a key at [open.higgsfield.ai/api-keys](https://open.higgsfield.ai/api-key
 
 All platform calls go from the server to `HF_API_BASE_URL` (`https://api.higgsfield.ai`) with
 `Authorization: Key <api-key>`.
+
+### 3. Super Computer planner (LLM)
+
+The Super Computer uses an LLM to turn a chat message into a plan. Set this on the server:
+
+| Setup | Env |
+|---|---|
+| **Claude (recommended)** | `LLM_PROVIDER=anthropic`, `LLM_API_KEY=<Anthropic API key>` (model defaults to `claude-opus-5`; override with `LLM_MODEL`) |
+| Any OpenAI-compatible API | `LLM_PROVIDER=openai-compatible`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` |
+| No LLM | leave it empty: a basic keyword planner (Arabic + English) still builds plans; script writing and "Enhance prompt" are hidden |
+
+The Claude provider uses the official `@anthropic-ai/sdk` with the following settings:
+- Structured output (`messages.parse` + a Zod schema), so the plan always comes back as valid JSON.
+- Adaptive thinking.
+- A cached, catalog-derived system prompt.
+- Server-side refusal fallbacks (`fallbacks: "default"`), so a declined request is retried on Anthropic's recommended model.
+
+## Super Computer
+
+1. **Chat:** describe the job in Arabic or English, e.g. *«اعملي إعلان 15 ثانية لبراند ساعات فخم، 3 لقطات، وصورة بوستر 4:5»*. You can attach images to use as references or start frames.
+2. **Plan:** the planner answers with an editable plan card. Each step is `generate_image`, `generate_video` or
+   `write_script`. Steps can feed each other, e.g. a keyframe image becomes a video's start frame and a poster's
+   reference. Each step shows its model, prompt, settings and inputs, and every one is editable. **Auto** picks the
+   first model in catalog order that accepts the step's inputs, and you can override it per step.
+3. **Validation:** the LLM's output is untrusted. `lib/supercomputer/plan.ts` checks it against the installed
+   catalog before anything is shown:
+   - Only known tools and models are kept (anything else falls back to Auto).
+   - Settings must be within each model's schema, and ratios snap to the nearest supported one.
+   - Inputs may only point at earlier image steps or real uploads.
+   - A plan has at most 8 steps.
+4. **Run all:** runs steps in dependency order, starting independent steps in parallel. It uses the same
+   submit → poll → cancel path as the studios, so jobs appear in the jobs tray, the studios and the library with
+   the same duplicate protection.
+   - **Stop** cancels queued jobs on Higgsfield.
+   - Failed or skipped steps have a **Retry step** button.
+   - Reloading the page resumes a running plan and re-attaches to in-flight jobs; they are never submitted twice.
+5. **Recipes:** **Save as recipe** stores the pipeline (without results) in the `recipes` table, or in the browser
+   in preview mode. Pick one from the side panel to run it again.
+
+Chats are kept per browser (localStorage). The generations they create are stored like any other job.
+With an LLM configured, the studios also get **✨ Enhance prompt**.
+
+Not available in this workspace (no matching models in the installed catalog): upscaling, lip-sync and audio.
+The planner says so if asked. Cost estimates are not shown because model pricing could not be verified.
 
 ## How generation works
 
@@ -135,7 +180,7 @@ settings from these files, so a new model file is all it takes to add a model.
 | `NEXT_PUBLIC_SITE_URL` | OAuth redirects and webhooks | No |
 | `HF_API_BASE_URL` | Server only, `https://api.higgsfield.ai` | No |
 | `HF_API_KEY` | Optional team key (server only, used only for signed-in users) | **Yes** |
-| `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` | Super Computer planner (Phase 5) | **Yes** |
+| `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` | Super Computer planner and Enhance prompt (server only) | **Yes** |
 
 ## Project structure
 
@@ -155,12 +200,16 @@ generation/
   jobs-repo.ts         Supabase persistence + ownership checks
   storage-copy.ts      Copies finished media into Supabase Storage
 components/
+  supercomputer/       Chat thread, input, plan card, step card, side panel
   studio/              Composer, model picker, references, settings, feed, tiles, key dialog, library
   layout/              Sidebar, mobile drawer, topbar, jobs tray, command palette
   ui/                  Button, Input, Card, Badge, Dropdown, Tooltip
 i18n/                  Locale config (cookie-based, ar default) + setLocale action
 messages/              ar.json, en.json
 lib/
+  llm/                 Planner providers: anthropic (SDK), openai-compatible, builtin
+  supercomputer/       Plan schema + validation, system prompt, actions, runner, chat store
+  studio/              Runs controller (submit / poll / cancel), media-role helpers
   config.ts            APP_NAME + feature flags
   nav.ts               Navigation, the single source for sidebar and palette
   supabase/            Browser, server and middleware clients
