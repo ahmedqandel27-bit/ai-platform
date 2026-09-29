@@ -3,7 +3,7 @@ import type { GenerationPlane, ModelEntry, PlatformRequest } from "../types"
 
 const soulSettings = {
   aspectRatio: { type: "enum", values: SOUL_ASPECT, default: "1:1" },
-  resolution: { type: "enum", values: ["720p", "1080p"], default: "720p" },
+  resolution: { type: "enum", values: ["720p", "1080p"], default: "1080p" },
   batchSize: { type: "enum", values: ["1", "4"], default: "1" },
   enhancePrompt: { type: "boolean", default: false },
 } as const satisfies ModelEntry["settings"]

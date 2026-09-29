@@ -7,7 +7,7 @@ const klingTurboSettings = {
     values: ["16:9", "9:16", "1:1"],
     default: "16:9",
   },
-  resolution: { type: "enum", values: ["720p", "1080p"], default: "720p" },
+  resolution: { type: "enum", values: ["720p", "1080p"], default: "1080p" },
   duration: { type: "range", min: 3, max: 15, default: 5 },
 } as const satisfies ModelEntry["settings"]
 

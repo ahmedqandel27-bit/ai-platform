@@ -26,7 +26,7 @@ export function imageModel(
     roles: { reference: 8 },
     settings: {
       aspectRatio: { type: "enum", values: IMAGE_ASPECT, default: "1:1" },
-      resolution: { type: "enum", values: ["1k", "2k", "4k"], default: "1k" },
+      resolution: { type: "enum", values: ["1k", "2k", "4k"], default: "2k" },
     },
     paths,
     ...extra,
@@ -47,7 +47,7 @@ export function videoModel(
     roles,
     settings: {
       aspectRatio: { type: "enum", values: VIDEO_ASPECT, default: "16:9" },
-      resolution: { type: "enum", values: ["720p", "1080p"], default: "720p" },
+      resolution: { type: "enum", values: ["720p", "1080p"], default: "1080p" },
       duration: { type: "range", min: 4, max: 10, default: 5 },
     },
     paths,
