@@ -36,7 +36,7 @@ export const seedance2: ModelEntry = {
     resolution: {
       type: "enum",
       values: ["480p", "720p", "1080p", "4k"],
-      default: "720p",
+      default: "1080p",
     },
   },
   icon: "seedance",
