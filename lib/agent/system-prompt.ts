@@ -3,6 +3,7 @@ import "server-only"
 import { APP_NAME } from "@/lib/config"
 import { catalogText } from "@/lib/supercomputer/system-prompt"
 import { MAX_GENERATIONS_PER_RUN } from "./limits"
+import { PLAYBOOK } from "./playbook"
 
 /**
  * The agent's system prompt. Built only from the installed catalog, so it is
@@ -27,7 +28,9 @@ export function buildAgentSystemPrompt(disabled: readonly string[] = []): string
 - Asset ids: "u1", "u2", … are the user's uploads; "a1", "a2", … are assets generated in this chat. Only reference ids that exist; videos cannot be used as image references.
 - You cannot edit, stitch, add music or subtitles to videos, and you cannot generate audio. Deliver clips in order with edit notes instead, and say so if asked.
 - If a tool fails, read the error and adapt (different model, simpler inputs, fixed settings). Stop and tell the user if their Higgsfield key is missing or out of credits.
+- A user message may start with "[Studio memory]": standing facts about the user's brand and taste. Apply them without being asked. When the user states a lasting preference or brand fact ("our color is…", "always 9:16", "I hate text on images"), save it with remember — one short fact per call, not one-off details of this job.
 
+${PLAYBOOK}
 # Model catalog (id [surface] "label" — inputs — settings)
 ${catalogText(disabled)}
 `

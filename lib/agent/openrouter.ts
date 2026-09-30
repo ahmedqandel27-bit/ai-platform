@@ -21,7 +21,7 @@ function toMessages(system: string, transcript: AgentTurn[]): ChatMessage[] {
         role: "user",
         content: [
           ...turn.uploads.filter((u) => u.kind === "image").map((u) => ({ type: "image_url", image_url: { url: u.url } })),
-          { type: "text", text: (turn.text || "(see attached files)") + note },
+          { type: "text", text: (turn.context ? `${turn.context}\n\n` : "") + (turn.text || "(see attached files)") + note },
         ],
       })
     } else if (turn.role === "assistant") {

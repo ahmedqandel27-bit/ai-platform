@@ -56,6 +56,17 @@ export const TOOL_SPECS: Array<{ name: ToolName; description: string; input_sche
     },
   },
   {
+    name: "remember",
+    description:
+      "Save one lasting fact about the user's brand or taste to the studio memory, so every future chat applies it (e.g. brand colors, product names, preferred formats, styles they love or hate).",
+    input_schema: {
+      type: "object",
+      properties: { fact: { type: "string", description: "One short fact, in the user's language." } },
+      required: ["fact"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "ask_user",
     description:
       "Pause and ask the user one question, e.g. to approve a storyboard before spending credits on video, or when the brief genuinely leaves a blocking choice open. Offer 2-4 short options. The run continues when they answer.",
@@ -91,6 +102,7 @@ export const TOOL_INPUTS = {
     end_frame: z.string().max(16).optional(),
     references: Ids,
   }),
+  remember: z.object({ fact: z.string().min(1).max(300) }),
   ask_user: z.object({
     question: z.string().min(1).max(2000),
     options: z.array(z.string().max(200)).max(6).optional(),
@@ -102,5 +114,5 @@ export type GenerateVideoInput = z.infer<typeof TOOL_INPUTS.generate_video>
 export type AskUserInput = z.infer<typeof TOOL_INPUTS.ask_user>
 
 export function isToolName(name: string): name is ToolName {
-  return name === "generate_image" || name === "generate_video" || name === "ask_user"
+  return name === "generate_image" || name === "generate_video" || name === "remember" || name === "ask_user"
 }

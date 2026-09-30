@@ -42,7 +42,7 @@ function toMessages(transcript: AgentTurn[]): Anthropic.Beta.BetaMessageParam[] 
           ...turn.uploads
             .filter((u) => u.kind === "image")
             .map((u): Anthropic.Beta.BetaImageBlockParam => ({ type: "image", source: { type: "url", url: u.url } })),
-          { type: "text", text: (turn.text || "(see attached files)") + note },
+          { type: "text", text: (turn.context ? `${turn.context}\n\n` : "") + (turn.text || "(see attached files)") + note },
         ],
       })
     } else if (turn.role === "assistant") {
@@ -151,4 +151,35 @@ function toLLMError(caught: unknown): LLMError {
     return new LLMError(`The model rejected the request: ${caught.message}`, "provider_error")
   if (caught instanceof Anthropic.APIError) return new LLMError(`Model error (${caught.status ?? "network"}). Try again.`, "provider_error")
   return new LLMError(caught instanceof Error ? caught.message : String(caught), "provider_error")
+}
+
+/**
+ * The creative director in front of Higgsfield's Supercomputer: turns a fast,
+ * dialect-heavy message into a decisive English production brief. Short,
+ * single turn; a few seconds at medium effort.
+ */
+export async function anthropicDirectorBrief(input: { system: string; request: string }): Promise<string> {
+  const api = client()
+  try {
+    const stream = api.beta.messages.stream({
+      model: "claude-opus-5-5",
+      max_tokens: 16000,
+      betas: [FALLBACK_BETA],
+      fallbacks: "default",
+      thinking: { type: "adaptive" },
+      output_config: { effort: "medium" },
+      system: [{ type: "text", text: input.system, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: input.request }],
+    })
+    const message = await stream.finalMessage()
+    if (message.stop_reason === "refusal") throw new LLMError("The director declined this request.", "refused")
+    const text = message.content
+      .flatMap((b) => (b.type === "text" ? [b.text] : []))
+      .join("")
+      .trim()
+    if (!text) throw new LLMError("The director returned no brief.", "invalid_output")
+    return text
+  } catch (caught) {
+    throw toLLMError(caught)
+  }
 }

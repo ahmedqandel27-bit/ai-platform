@@ -467,6 +467,13 @@
     "download": "Open",
     "tabNote": "Keep this tab open while it works — it continues after a reload.",
     "noModel": "No thinking model is set up on the server yet — using the basic planner. Add ANTHROPIC_API_KEY (Claude) or OPENROUTER_API_KEY (GPT, Gemini…) in Vercel to unlock the full Super Computer.",
-    "doneShort": "Done in {time}"
+    "doneShort": "Done in {time}",
+    "directorBrief": "Director's brief",
+    "remembered": "Saved to studio memory",
+    "memory": "Studio memory",
+    "memoryHint": "Brand facts and taste the Super Computer applies in every chat. It also saves what it learns.",
+    "memoryPlaceholder": "e.g. Our brand color is electric purple",
+    "memoryAdd": "Add",
+    "memoryEmpty": "Nothing saved yet."
   }
 }

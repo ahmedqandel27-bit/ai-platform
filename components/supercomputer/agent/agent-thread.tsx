@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Brain, Cpu, Film, HelpCircle, ImageIcon, Loader2, Play, Square, TriangleAlert } from "lucide-react";
+import { Brain, BookmarkCheck, Clapperboard, Cpu, Film, HelpCircle, ImageIcon, Loader2, Play, Square, TriangleAlert } from "lucide-react";
 import { modelLabel } from "@/lib/supercomputer/plan";
 import { resumeAgent, stopAgent } from "@/lib/agent/runner";
 import type { ToolCall, TranscriptUpload } from "@/lib/agent/types";
@@ -24,7 +24,13 @@ export function AgentThread({ session, agent, onAnswer }: { session: Session; ag
   return (
     <div className="flex-1 space-y-6 py-4" data-testid="sc-thread" key={session.id}>
       {agent.transcript.map((turn, index) => {
-        if (turn.role === "user") return <UserBubble key={index} text={turn.text} uploads={turn.uploads} />;
+        if (turn.role === "user")
+          return (
+            <div key={index} className="space-y-2">
+              <UserBubble text={turn.text} uploads={turn.uploads} />
+              {turn.brief && <DirectorBrief text={turn.brief} />}
+            </div>
+          );
         if (turn.role === "tool") return turn.answer ? <UserBubble key={index} text={turn.answer.text} uploads={turn.answer.uploads} /> : null;
         return (
           <div key={index} className="flex gap-3" data-testid="sc-assistant">
@@ -113,6 +119,21 @@ function UserBubble({ text, uploads }: { text: string; uploads: TranscriptUpload
   );
 }
 
+function DirectorBrief({ text }: { text: string }) {
+  const t = useTranslations("agent");
+  return (
+    <details className="ms-auto max-w-[85%] rounded-xl border border-accent/25 bg-accent/[0.05] px-3 py-2 text-xs text-muted">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-accent marker:hidden">
+        <Clapperboard className="size-3.5" />
+        {t("directorBrief")}
+      </summary>
+      <p dir="ltr" className="mt-2 whitespace-pre-wrap text-start leading-relaxed">
+        {text}
+      </p>
+    </details>
+  );
+}
+
 function Thinking({ text }: { text: string }) {
   const t = useTranslations("agent");
   return (
@@ -151,6 +172,15 @@ function CallCard({
   const t = useTranslations("agent");
   const state = agent.calls[call.id];
   const input = call.input;
+
+  if (call.name === "remember" && !call.invalid) {
+    return (
+      <p className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white/[0.03] px-3 py-1.5 text-xs text-muted sm:col-span-2 sm:w-fit">
+        <BookmarkCheck className="size-3.5 text-accent" />
+        {t("remembered")}: <span dir="auto" className="text-foreground/90">{String(input.fact ?? "")}</span>
+      </p>
+    );
+  }
 
   if (call.name === "ask_user" && !call.invalid) {
     const options = Array.isArray(input.options) ? (input.options as string[]) : [];
