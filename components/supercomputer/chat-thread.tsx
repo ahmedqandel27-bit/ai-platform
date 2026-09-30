@@ -7,7 +7,16 @@ import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import type { Session } from "@/lib/supercomputer/store";
 import { PlanCard } from "./plan-card";
 
-export function ChatThread({ session, onSuggestion }: { session: Session; onSuggestion: (text: string) => void }) {
+export function ChatThread({
+  session,
+  onSuggestion,
+  heroBody,
+}: {
+  session: Session;
+  onSuggestion: (text: string) => void;
+  /** Replaces the default intro line (the agent describes itself differently). */
+  heroBody?: string;
+}) {
   const t = useTranslations("sc");
   const endRef = useRef<HTMLDivElement>(null);
   const count = session.messages.length;
@@ -31,7 +40,7 @@ export function ChatThread({ session, onSuggestion }: { session: Session; onSugg
           <h1 className="font-display max-w-3xl text-5xl leading-[1.02] sm:text-6xl lg:text-7xl">
             {t("heroTitleA")} <em className="text-gradient">{t("heroTitleB")}</em>
           </h1>
-          <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted">{t("heroBody")}</p>
+          <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted">{heroBody ?? t("heroBody")}</p>
         </Reveal>
 
         <p className="eyebrow mb-3 mt-12">{t("tryOne")}</p>

@@ -11,6 +11,10 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  experimental: {
+    // Agent turns send the whole Super Computer conversation (Vercel caps bodies at 4.5 MB).
+    serverActions: { bodySizeLimit: "4mb" },
+  },
 };
 
 export default withNextIntl(nextConfig);

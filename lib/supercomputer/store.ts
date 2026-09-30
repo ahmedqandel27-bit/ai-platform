@@ -3,6 +3,7 @@
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 
+import type { AgentTurn, Effort, ToolResult } from "@/lib/agent/types"
 import type { Recipe } from "./actions"
 import type { Plan, PlanStep, UploadInfo } from "./plan"
 
@@ -40,13 +41,61 @@ export type ChatMessage = {
   createdAt: number
 }
 
-export type Session = { id: string; title: string; createdAt: number; updatedAt: number; messages: ChatMessage[] }
+/** A piece of media the agent can reference by id: "u1".. uploads, "a1".. generated. */
+export type AgentAsset = {
+  id: string
+  kind: "image" | "video" | "audio"
+  url: string
+  source: "upload" | "generated"
+  title?: string
+  model?: string
+  callId?: string
+}
+
+export type AgentCallState = {
+  status: "running" | "done" | "failed" | "stopped"
+  runId?: string
+  assetIds?: string[]
+  error?: string
+}
+
+export type AgentStatus = "idle" | "thinking" | "working" | "waiting" | "done" | "stopped" | "error"
+
+/** An agent chat: the append-only transcript plus what the UI needs to show progress. */
+export type AgentState = {
+  transcript: AgentTurn[]
+  calls: Record<string, AgentCallState>
+  assets: AgentAsset[]
+  status: AgentStatus
+  error?: string
+  runStartedAt?: number
+  runEndedAt?: number
+  /** Generations and model turns used by the current run (reset on every new message). */
+  generations: number
+  turns: number
+  /** Results already gathered for a turn that also asked the user something. */
+  pending?: ToolResult[]
+}
+
+export type Session = {
+  id: string
+  title: string
+  createdAt: number
+  updatedAt: number
+  messages: ChatMessage[]
+  agent?: AgentState
+}
 
 type State = {
   sessions: Session[]
   activeId: string | null
   /** Used only when Supabase is not configured (preview mode). */
   localRecipes: Recipe[]
+  /** Last thinking model / effort picked in the Super Computer (null → server default). */
+  agentModel: string | null
+  agentEffort: Effort
+  setAgentPrefs: (prefs: { model?: string; effort?: Effort }) => void
+  patchAgent: (sessionId: string, fn: (agent: AgentState) => AgentState) => void
   newSession: () => string
   selectSession: (id: string) => void
   deleteSession: (id: string) => void
@@ -87,6 +136,14 @@ export const useSuperComputer = create<State>()(
       sessions: [],
       activeId: null,
       localRecipes: [],
+      agentModel: null,
+      agentEffort: "high",
+      setAgentPrefs: ({ model, effort }) =>
+        set((state) => ({ agentModel: model ?? state.agentModel, agentEffort: effort ?? state.agentEffort })),
+      patchAgent: (sessionId, fn) =>
+        set((state) => ({
+          sessions: mapSession(state.sessions, sessionId, (s) => ({ ...s, agent: fn(s.agent ?? emptyAgent()) })),
+        })),
       newSession: () => {
         const current = get().sessions.find((s) => s.id === get().activeId)
         if (current && current.messages.length === 0) return current.id
@@ -157,10 +214,20 @@ export const useSuperComputer = create<State>()(
       name: "nexus-supercomputer-v1",
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
-      partialize: (s) => ({ sessions: s.sessions, activeId: s.activeId, localRecipes: s.localRecipes }),
+      partialize: (s) => ({
+        sessions: s.sessions,
+        activeId: s.activeId,
+        localRecipes: s.localRecipes,
+        agentModel: s.agentModel,
+        agentEffort: s.agentEffort,
+      }),
     },
   ),
 )
+
+export function emptyAgent(): AgentState {
+  return { transcript: [], calls: {}, assets: [], status: "idle", generations: 0, turns: 0 }
+}
 
 export function findMessage(sessionId: string, messageId: string): ChatMessage | undefined {
   return useSuperComputer
