@@ -434,5 +434,39 @@
     "crashTitle": "Something broke on our side.",
     "crashBody": "Your generations are safe. Try again — if it keeps happening, send us the reference below.",
     "retry": "Try again"
+  },
+  "agent": {
+    "heroBody": "Give me the brief — product, campaign or idea. I'll plan it, generate every shot, review the results myself and deliver the finished set.",
+    "placeholder": "Describe the job… (Enter to send, Shift+Enter for a new line)",
+    "answerPlaceholder": "Type your answer, or pick an option above…",
+    "thinking": "Thinking…",
+    "working": "Generating {count}…",
+    "waiting": "Waiting for your answer",
+    "done": "Done in {time} · {count} generations",
+    "stopped": "Stopped",
+    "stop": "Stop",
+    "continue": "Continue",
+    "thoughtProcess": "Thought process",
+    "prompt": "Prompt",
+    "image": "Image",
+    "video": "Video",
+    "question": "Question",
+    "failed": "Failed",
+    "stoppedCall": "Stopped",
+    "model": "Thinking model",
+    "effort": "Effort",
+    "effortLevels": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "max": "Max"
+    },
+    "premium": "High cost",
+    "assets": "Assets in this chat",
+    "noAssets": "Everything the Super Computer makes shows up here.",
+    "download": "Open",
+    "tabNote": "Keep this tab open while it works — it continues after a reload.",
+    "noModel": "No thinking model is set up on the server yet — using the basic planner. Add ANTHROPIC_API_KEY (Claude) or OPENROUTER_API_KEY (GPT, Gemini…) in Vercel to unlock the full Super Computer.",
+    "doneShort": "Done in {time}"
   }
 }

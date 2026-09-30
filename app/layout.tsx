@@ -5,6 +5,8 @@ import { getLocale } from "next-intl/server";
 import { APP_NAME, APP_TAGLINE } from "@/lib/config";
 import { localeDirection, type Locale } from "@/i18n/config";
 import { Providers } from "./providers";
+import { Splash, SplashScript } from "@/components/brand/splash";
+import { BatDefs } from "@/components/brand/flying-bat";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -56,8 +58,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = (await getLocale()) as Locale;
 
   return (
-    <html lang={locale} dir={localeDirection[locale]} className={`${inter.variable} ${arabic.variable} ${display.variable} ${displayArabic.variable} ${brand.variable}`}>
+    <html lang={locale} dir={localeDirection[locale]} className={`${inter.variable} ${arabic.variable} ${display.variable} ${displayArabic.variable} ${brand.variable}`} suppressHydrationWarning>
+      <head>
+        <SplashScript />
+      </head>
       <body>
+        <BatDefs />
+        <Splash />
         <NextIntlClientProvider>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>

@@ -2,13 +2,9 @@ import { MODELS } from "@/generation/catalog"
 import { APP_NAME } from "@/lib/config"
 import { MAX_STEPS } from "./plan"
 
-/**
- * The planner's system prompt. Built only from the installed catalog so it is
- * byte-stable between requests (prompt-cache friendly) and never mentions a
- * model the app cannot run.
- */
-export function buildPlannerSystemPrompt(disabled: readonly string[] = []): string {
-  const catalog = MODELS.filter((m) => !disabled.includes(m.id)).map((m) => {
+/** One line per installed model: id, surface, label, inputs and settings. */
+export function catalogText(disabled: readonly string[] = []): string {
+  return MODELS.filter((m) => !disabled.includes(m.id)).map((m) => {
     const inputs = Object.entries(m.roles)
       .filter(([, n]) => (n ?? 0) > 0)
       .map(([role, n]) => `${role}×${n}`)
@@ -24,6 +20,15 @@ export function buildPlannerSystemPrompt(disabled: readonly string[] = []): stri
       .join("; ")
     return `- ${m.id} [${m.surface}] "${m.label}" — inputs: ${inputs} — settings: ${settings || "none"}`
   }).join("\n")
+}
+
+/**
+ * The planner's system prompt. Built only from the installed catalog so it is
+ * byte-stable between requests (prompt-cache friendly) and never mentions a
+ * model the app cannot run.
+ */
+export function buildPlannerSystemPrompt(disabled: readonly string[] = []): string {
+  const catalog = catalogText(disabled)
 
   return `You are the Super Computer inside ${APP_NAME}, an AI creation studio used by a creative agency. You turn a request into a short, executable production plan of media generations, run on the Higgsfield platform.
 

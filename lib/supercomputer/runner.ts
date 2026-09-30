@@ -200,7 +200,7 @@ async function settleFromRun(sessionId: string, messageId: string, stepId: strin
 }
 
 /** Resolves when the run reaches a terminal status (or disappears from history). */
-function waitForRun(runId: string): Promise<Run | null> {
+export function waitForRun(runId: string): Promise<Run | null> {
   return new Promise((resolve) => {
     let unsubscribe: () => void = () => {}
     const check = () => {

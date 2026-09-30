@@ -33,10 +33,20 @@ export function SidePanel({ session }: { session: Session }) {
 
   const steps = useMemo(() => session.messages.flatMap((m) => m.plan?.steps ?? []), [session.messages]);
   const runIds = new Set(steps.map((s) => s.runId).filter(Boolean));
-  const running = runs.filter((r) => runIds.has(r.id) && !isTerminal(r.status)).length;
-  const assets = steps.flatMap((s) =>
-    s.outputs?.video ? [{ url: s.outputs.video, video: true }] : (s.outputs?.images ?? []).map((url) => ({ url, video: false })),
-  );
+  const agentRunning = Object.values(session.agent?.calls ?? {}).filter((c) => c.status === "running" && c.runId).length;
+  const running = runs.filter((r) => runIds.has(r.id) && !isTerminal(r.status)).length + agentRunning;
+  // Newest first: the agent's generated assets, then outputs of plan steps.
+  const assets = [
+    ...(session.agent?.assets ?? [])
+      .filter((a) => a.source === "generated")
+      .map((a) => ({ url: a.url, video: a.kind === "video", id: a.id }))
+      .reverse(),
+    ...steps.flatMap((s) =>
+      s.outputs?.video
+        ? [{ url: s.outputs.video, video: true, id: "" }]
+        : (s.outputs?.images ?? []).map((url) => ({ url, video: false, id: "" })),
+    ),
+  ];
 
   const removeRecipe = async (recipe: Recipe) => {
     if (serverRecipes) {
@@ -101,13 +111,24 @@ export function SidePanel({ session }: { session: Session }) {
         {assets.length ? (
           <>
             <div className="grid grid-cols-3 gap-1.5">
-              {assets.slice(0, 12).map((a) => (
-                <a key={a.url} href={a.url} target="_blank" rel="noreferrer" className="aspect-square overflow-hidden rounded-md bg-surface-2">
+              {assets.slice(0, 24).map((a, i) => (
+                <a
+                  key={`${a.id}:${i}`}
+                  href={a.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="relative aspect-square overflow-hidden rounded-md bg-surface-2"
+                >
                   {a.video ? (
                     <video src={a.url} muted playsInline preload="metadata" className="size-full object-cover" />
                   ) : (
                     // eslint-disable-next-line @next/next/no-img-element -- remote thumbnail
                     <img src={a.url} alt="" className="size-full object-cover" />
+                  )}
+                  {a.id && (
+                    <span className="absolute bottom-0.5 start-0.5 rounded bg-black/60 px-1 text-[9px] text-white/90" dir="ltr">
+                      {a.id}
+                    </span>
                   )}
                 </a>
               ))}
