@@ -200,3 +200,95 @@ html[lang="ar"] .font-display {
 html[lang="ar"] em {
   font-style: normal;
 }
+
+/* ─── The bat in flight ─────────────────────────────────────────── */
+
+.bat-fly {
+  position: relative;
+  display: inline-flex;
+  aspect-ratio: 624 / 294;
+  perspective: 240px;
+  filter: drop-shadow(0 0 6px rgb(144 24 240 / 0.8));
+}
+.bat-wing {
+  display: block;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  transform-style: preserve-3d;
+}
+.bat-wing-l { transform-origin: right center; }
+.bat-wing-r { transform-origin: left center; }
+
+/* Continuous flight: wings beat, the body rises on each downstroke. */
+.bat-fly:not(.bat-fly-hover) { animation: bat-bob 0.9s ease-in-out infinite; }
+.bat-fly:not(.bat-fly-hover) .bat-wing-l { animation: wing-l 0.45s ease-in-out infinite alternate; }
+.bat-fly:not(.bat-fly-hover) .bat-wing-r { animation: wing-r 0.45s ease-in-out infinite alternate; }
+
+/* Resting (logo): a slow glide; a few beats when the logo is hovered. */
+.bat-fly-hover { animation: bat-glide 4s ease-in-out infinite; }
+:hover > .bat-fly-hover .bat-wing-l,
+:hover > * > .bat-fly-hover .bat-wing-l { animation: wing-l 0.3s ease-in-out 4 alternate; }
+:hover > .bat-fly-hover .bat-wing-r,
+:hover > * > .bat-fly-hover .bat-wing-r { animation: wing-r 0.3s ease-in-out 4 alternate; }
+
+@keyframes wing-l { from { transform: rotateY(0deg); } to { transform: rotateY(62deg); } }
+@keyframes wing-r { from { transform: rotateY(0deg); } to { transform: rotateY(-62deg); } }
+@keyframes bat-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8%); } }
+@keyframes bat-glide { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-6%) rotate(-2deg); } }
+
+/* ─── Opening splash (once per session) ─────────────────────────── */
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+  pointer-events: none;
+  animation: splash-out 0.55s var(--ease-out-soft, ease-out) 1.35s forwards;
+}
+html[data-splash="off"] .splash { display: none; }
+.splash-glow {
+  position: absolute;
+  width: 34rem;
+  height: 34rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgb(106 0 244 / 0.28), transparent 65%);
+  animation: splash-glow 1.4s ease-out both;
+}
+.splash-ring circle {
+  fill: none;
+  stroke: #9018f0;
+  stroke-width: 2;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 6px rgb(144 24 240 / 0.9));
+  transform: rotate(-90deg);
+  transform-origin: center;
+  animation: ring-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.05s forwards;
+}
+.splash-bat { animation: bat-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+.splash-bat .bat-wing-l { animation: wing-l 0.22s ease-in-out infinite alternate; }
+.splash-bat .bat-wing-r { animation: wing-r 0.22s ease-in-out infinite alternate; }
+.splash-word { animation: word-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both; }
+
+@keyframes ring-draw { to { stroke-dashoffset: 0; } }
+@keyframes bat-in {
+  from { opacity: 0; transform: translateY(70%) scale(0.4); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(10px); letter-spacing: 0.3em; }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes splash-glow { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+@keyframes splash-out { to { opacity: 0; visibility: hidden; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .splash { display: none; }
+  .bat-fly, .bat-wing { animation: none !important; }
+}
