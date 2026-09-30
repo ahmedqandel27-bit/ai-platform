@@ -1,22 +1,23 @@
 @import "tailwindcss";
 
 /*
- * Design tokens — dark, premium, one electric accent (violet → cyan).
+ * Design tokens — The Viral Empire: near-black with a violet cast, one
+ * electric-violet accent taken from the bat logo (deep #5b0fe0 → neon #a43bff).
  * The app is dark-only by design; tokens live here so the palette can be
  * tuned in one place. The accent is used sparingly: primary actions, the
  * active state and one highlighted word per headline.
  */
 :root {
-  --background: #07070a;
-  --surface: #0e0e13;
-  --surface-2: #15151c;
+  --background: #050309;
+  --surface: #0d0a14;
+  --surface-2: #15111e;
   --border: rgb(255 255 255 / 0.08);
   --border-strong: rgb(255 255 255 / 0.14);
   --foreground: #ededf2;
   --muted: #8b8b99;
-  --accent-from: #8b5cf6;
-  --accent-to: #22d3ee;
-  --accent: #a78bfa;
+  --accent-from: #5b0fe0;
+  --accent-to: #a43bff;
+  --accent: #b98aff;
   --danger: #f87171;
   --success: #34d399;
   --warning: #fbbf24;
@@ -89,7 +90,7 @@ p {
 
 /* One consistent, visible focus ring for keyboard users only. */
 :focus-visible {
-  outline: 2px solid rgb(167 139 250 / 0.7);
+  outline: 2px solid rgb(185 138 255 / 0.75);
   outline-offset: 2px;
 }
 
@@ -105,8 +106,8 @@ p {
 /* Ambient glow behind the whole app. */
 .app-glow {
   background:
-    radial-gradient(60rem 30rem at 85% -10%, rgb(139 92 246 / 0.12), transparent 60%),
-    radial-gradient(40rem 25rem at 0% 110%, rgb(34 211 238 / 0.07), transparent 60%);
+    radial-gradient(60rem 30rem at 85% -10%, rgb(106 0 244 / 0.16), transparent 60%),
+    radial-gradient(40rem 25rem at 0% 110%, rgb(164 59 255 / 0.08), transparent 60%);
 }
 
 @utility glass {
@@ -115,8 +116,9 @@ p {
   border: 1px solid var(--border);
 }
 
+/* Like the logo's "THE VIRAL": lilac-white into electric violet. */
 @utility text-gradient {
-  background: linear-gradient(90deg, var(--accent-from), var(--accent-to));
+  background: linear-gradient(90deg, #f1e4ff, #b56bff 55%, #8a2bff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -136,6 +138,17 @@ p {
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+/* Brand wordmark type (Cinzel), used only for the logo. */
+@utility font-brand {
+  font-family: var(--font-brand), ui-serif, Georgia, serif;
+}
+
+/* The logo's neon ring: thin violet line with a soft outer glow. */
+@utility neon-ring {
+  border: 1px solid rgb(164 59 255 / 0.85);
+  box-shadow: 0 0 12px -2px rgb(144 24 240 / 0.8), inset 0 0 8px -3px rgb(144 24 240 / 0.7);
 }
 
 @utility bg-gradient-accent {
@@ -160,7 +173,7 @@ p {
 }
 
 ::selection {
-  background: rgb(139 92 246 / 0.4);
+  background: rgb(106 0 244 / 0.45);
 }
 
 /* Slim scrollbars */

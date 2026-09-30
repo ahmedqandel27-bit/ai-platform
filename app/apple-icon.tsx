@@ -1,10 +1,10 @@
 import { ImageResponse } from "next/og";
-import { APP_NAME } from "@/lib/config";
+import { BAT_PATH, BAT_VIEWBOX } from "@/components/brand/bat";
 
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
-/** Home-screen icon (iOS/Android): the monogram on the accent gradient. */
+/** Home-screen icon (iOS/Android): the bat in the neon ring, on black. */
 export default function AppleIcon() {
   return new ImageResponse(
     (
@@ -15,13 +15,25 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #8b5cf6, #22d3ee)",
-          color: "white",
-          fontSize: 110,
-          fontWeight: 600,
+          background: "radial-gradient(circle at 50% 45%, #1a0638, #050309 70%)",
         }}
       >
-        {APP_NAME.charAt(0)}
+        <div
+          style={{
+            width: 150,
+            height: 150,
+            borderRadius: 999,
+            border: "3px solid #9018f0",
+            boxShadow: "0 0 18px #6a0cf0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <svg width="112" height="53" viewBox={BAT_VIEWBOX}>
+            <path d={BAT_PATH} fill="#9d3bff" fillRule="evenodd" />
+          </svg>
+        </div>
       </div>
     ),
     size,
