@@ -99,17 +99,18 @@ delivery note. The user picks the model and effort in the chat box.
 
 | Models in the picker | Env (server only) |
 |---|---|
+| **Higgsfield Supercomputer** (default) — Higgsfield's own agent via its Agent API (preview), with all of Higgsfield's tools | none: it uses the user's Higgsfield key; the Higgsfield API account needs **Agent API access** enabled (else a clear 403 message) |
 | Claude Opus 5.5 (default), Claude Fable 5.1, Claude Sonnet 5.5 | `ANTHROPIC_API_KEY` (or `LLM_API_KEY` with `LLM_PROVIDER=anthropic`) |
 | GPT, Gemini, Grok, … | `OPENROUTER_API_KEY`, plus optionally `OPENROUTER_MODELS="openai/gpt-5=GPT-5,google/gemini-2.5-pro=Gemini 2.5 Pro"` (OpenRouter ids) |
 
-How the agent runs:
+How the in-app agent (Claude / OpenRouter models) runs:
 - The loop runs in the browser, one server call per model turn (up to 5 minutes each), so no request has to
   outlive a serverless limit.
 - Generations go through the studios' submit → poll path, so they show up in the jobs tray and the library.
 - The run continues after a page reload. Stop cancels jobs that are still queued.
 - A run is capped at 24 generations and 40 model turns (`lib/agent/limits.ts`).
 
-Without any of these keys, the Super Computer falls back to the classic planner. Set this on the server:
+"Classic planner" in the picker keeps the original plan-card flow. Its planner LLM is set on the server:
 
 | Setup | Env |
 |---|---|

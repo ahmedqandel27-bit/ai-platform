@@ -10,10 +10,15 @@
 export const EFFORTS = ["low", "medium", "high", "max"] as const
 export type Effort = (typeof EFFORTS)[number]
 
+/** Higgsfield's own Supercomputer (Agent API), run with the user's Higgsfield key. */
+export const HF_AGENT_ID = "higgsfield-supercomputer"
+/** The classic planner (plan card + Run all), always available as a fallback. */
+export const CLASSIC_ID = "classic-planner"
+
 export type AgentModelInfo = {
   id: string
   label: string
-  provider: "anthropic" | "openrouter"
+  provider: "higgsfield" | "anthropic" | "openrouter" | "classic"
   /** Short line under the name in the picker. */
   blurb: string
   /** Shown as a "high cost" hint in the picker. */
@@ -53,6 +58,8 @@ export type AgentTurn =
       /** Provider-native content, replayed unchanged (Claude only). */
       raw?: { provider: "anthropic"; content: unknown[] }
       model: string
+      /** Media the turn delivered directly (the Higgsfield agent returns links, not tool calls). */
+      assetIds?: string[]
     }
   | {
       role: "tool"

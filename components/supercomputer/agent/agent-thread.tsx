@@ -36,6 +36,23 @@ export function AgentThread({ session, agent, onAnswer }: { session: Session; ag
                   {turn.text}
                 </p>
               )}
+              {turn.assetIds && turn.assetIds.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {turn.assetIds.map((id) => assets.get(id)).filter((a): a is AgentAsset => Boolean(a)).map((a) => (
+                    <a key={a.id} href={a.url} target="_blank" rel="noreferrer" className="group relative block overflow-hidden rounded-xl border border-border bg-black">
+                      {a.kind === "video" ? (
+                        <video src={a.url} controls playsInline preload="metadata" className="max-h-[420px] w-full" />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element -- generated output
+                        <img src={a.url} alt={a.id} className="max-h-[420px] w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]" />
+                      )}
+                      <span className="absolute start-2 top-2 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] text-white/90 backdrop-blur" dir="ltr">
+                        {a.id}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              )}
               {turn.calls.length > 0 && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {turn.calls.map((call) => (
@@ -246,8 +263,15 @@ function StatusBar({ sessionId, agent }: { sessionId: string; agent: AgentState 
   const running = Object.values(agent.calls).filter((c) => c.status === "running").length;
 
   if (active) {
+    const live = agent.hf?.live?.trim();
     return (
-      <div className="flex items-center gap-3 ps-11">
+      <div className="space-y-2 ps-11">
+      {live && (
+        <p dir="auto" className="line-clamp-4 whitespace-pre-wrap text-sm leading-relaxed text-muted">
+          {live.slice(-600)}
+        </p>
+      )}
+      <div className="flex items-center gap-3">
         <span className="inline-flex items-center gap-2 text-sm text-muted">
           <span className="relative flex size-2">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-60" />
@@ -267,6 +291,7 @@ function StatusBar({ sessionId, agent }: { sessionId: string; agent: AgentState 
           <Square className="size-3" />
           {t("stop")}
         </button>
+      </div>
       </div>
     );
   }
@@ -295,7 +320,9 @@ function StatusBar({ sessionId, agent }: { sessionId: string; agent: AgentState 
   if (agent.status === "done" && agent.runStartedAt)
     return (
       <p className="ps-11 text-[11px] text-muted/80">
-        {t("done", { time: formatDuration(elapsed), count: agent.generations })}
+        {agent.generations
+          ? t("done", { time: formatDuration(elapsed), count: agent.generations })
+          : t("doneShort", { time: formatDuration(elapsed) })}
       </p>
     );
 

@@ -6,7 +6,7 @@ import { getViewer } from "@/generation/server-credentials"
 import { LLMError } from "@/lib/llm/types"
 import { getTeamContext } from "@/lib/team/server"
 import { anthropicAgentTurn } from "./anthropic"
-import { availableAgentModels, findAgentModel } from "./models"
+import { availableAgentModels, findAgentModel, loopModels } from "./models"
 import { openRouterAgentTurn } from "./openrouter"
 import { buildAgentSystemPrompt } from "./system-prompt"
 import { EFFORTS, type AgentModelInfo, type AgentTurn, type AgentTurnResponse } from "./types"
@@ -38,6 +38,7 @@ const Turn = z.discriminatedUnion("role", [
     calls: z.array(Call).max(16),
     raw: z.object({ provider: z.literal("anthropic"), content: z.array(z.unknown()).max(64) }).optional(),
     model: z.string().max(128),
+    assetIds: z.array(z.string().max(16)).max(32).optional(),
   }),
   z.object({
     role: z.literal("tool"),
@@ -75,8 +76,9 @@ export async function agentTurn(input: unknown): Promise<{ ok: true; data: Agent
   const { model, effort, transcript } = parsed.data
   if (transcript[0]?.role !== "user") return fail("invalid_input", "The conversation must start with a message from you.")
   // An unknown or retired choice falls back to the deployment's default model.
-  const info = findAgentModel(model) ?? availableAgentModels()[0]
-  if (!info) return fail("not_configured", "No thinking model is configured on the server.")
+  const info = findAgentModel(model) ?? loopModels()[0]
+  if (!info)
+    return fail("not_configured", "No thinking model is configured on the server. Add ANTHROPIC_API_KEY or OPENROUTER_API_KEY in Vercel, or pick Higgsfield Supercomputer.")
 
   try {
     const disabled = (await getTeamContext())?.settings.disabledModels ?? []

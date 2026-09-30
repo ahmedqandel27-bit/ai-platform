@@ -75,6 +75,16 @@ export type AgentState = {
   turns: number
   /** Results already gathered for a turn that also asked the user something. */
   pending?: ToolResult[]
+  /** Higgsfield Agent API session (when the chat runs on Higgsfield's Supercomputer). */
+  hf?: {
+    sessionId: string
+    /** Id of the last message we sent: polling reads what came after it. */
+    cursor?: string
+    /** Assistant rows already added to the transcript. */
+    seen: string[]
+    /** Text of the reply still being written, shown live. */
+    live?: string
+  }
 }
 
 export type Session = {

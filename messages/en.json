@@ -466,6 +466,7 @@
     "noAssets": "Everything the Super Computer makes shows up here.",
     "download": "Open",
     "tabNote": "Keep this tab open while it works — it continues after a reload.",
-    "noModel": "No thinking model is set up on the server yet — using the basic planner. Add ANTHROPIC_API_KEY (Claude) or OPENROUTER_API_KEY (GPT, Gemini…) in Vercel to unlock the full Super Computer."
+    "noModel": "No thinking model is set up on the server yet — using the basic planner. Add ANTHROPIC_API_KEY (Claude) or OPENROUTER_API_KEY (GPT, Gemini…) in Vercel to unlock the full Super Computer.",
+    "doneShort": "Done in {time}"
   }
 }

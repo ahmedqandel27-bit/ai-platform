@@ -32,10 +32,11 @@ export function SuperComputer() {
   const { data: models = [] } = useQuery({ queryKey: ["agent-models"], queryFn: () => listAgentModels(), staleTime: 5 * 60_000 });
   const agentModel = useSuperComputer((s) => s.agentModel);
   const setAgentPrefs = useSuperComputer((s) => s.setAgentPrefs);
-  // A legacy plan chat stays a plan chat; everything else runs on the agent when one is configured.
-  const legacy = Boolean(session?.messages.length) && !session?.agent;
-  const agentMode = models.length > 0 && !legacy;
   const agent = session?.agent;
+  // A plan chat stays a plan chat and an agent chat stays an agent chat; a new chat follows the picker.
+  const legacy = Boolean(session?.messages.length) && !agent?.transcript.length;
+  const selected = models.find((m) => m.id === agentModel) ?? models[0];
+  const agentMode = !legacy && (Boolean(agent?.transcript.length) || (selected !== undefined && selected.provider !== "classic"));
   const busy = agentMode
     ? agent?.status === "thinking" || agent?.status === "working"
     : Boolean(session?.messages.some((m) => m.pending));
@@ -96,7 +97,7 @@ export function SuperComputer() {
             onSend={onSend}
             busy={busy}
             placeholder={agentMode ? (agent?.status === "waiting" ? ta("answerPlaceholder") : ta("placeholder")) : undefined}
-            extra={agentMode ? <ModelPicker models={models} /> : undefined}
+            extra={models.length && !legacy ? <ModelPicker models={models} /> : undefined}
           />
           {agentMode ? (
             <p className="mt-2 text-center text-[11px] text-muted/70">{ta("tabNote")}</p>

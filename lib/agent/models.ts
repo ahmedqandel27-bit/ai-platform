@@ -1,6 +1,6 @@
 import "server-only"
 
-import type { AgentModelInfo } from "./types"
+import { CLASSIC_ID, HF_AGENT_ID, type AgentModelInfo } from "./types"
 
 /**
  * The thinking models the Super Computer can run on. Claude models need an
@@ -61,11 +61,34 @@ function openRouterModels(): AgentModelInfo[] {
   })
 }
 
-/** Models available on this deployment, best default first. */
+const HIGGSFIELD: AgentModelInfo = {
+  id: HF_AGENT_ID,
+  label: "Higgsfield Supercomputer",
+  provider: "higgsfield",
+  blurb: "Higgsfield's own agent · uses your Higgsfield key and credits",
+  premium: false,
+  effort: false,
+}
+
+const CLASSIC: AgentModelInfo = {
+  id: CLASSIC_ID,
+  label: "Classic planner",
+  provider: "classic",
+  blurb: "Editable plan card, you press Run",
+  premium: false,
+  effort: false,
+}
+
+/** Models available on this deployment, default first. */
 export function availableAgentModels(): AgentModelInfo[] {
-  return [...(hasAnthropic() ? CLAUDE : []), ...(hasOpenRouter() ? openRouterModels() : [])]
+  return [HIGGSFIELD, ...(hasAnthropic() ? CLAUDE : []), ...(hasOpenRouter() ? openRouterModels() : []), CLASSIC]
+}
+
+/** Thinking models the in-app agent loop can run (Claude / OpenRouter). */
+export function loopModels(): AgentModelInfo[] {
+  return availableAgentModels().filter((m) => m.provider === "anthropic" || m.provider === "openrouter")
 }
 
 export function findAgentModel(id: string): AgentModelInfo | undefined {
-  return availableAgentModels().find((m) => m.id === id)
+  return loopModels().find((m) => m.id === id)
 }

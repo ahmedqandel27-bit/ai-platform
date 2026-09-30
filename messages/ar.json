@@ -466,6 +466,7 @@
     "noAssets": "كل اللي السوبر كمبيوتر بيعمله هيظهر هنا.",
     "download": "فتح",
     "tabNote": "سيب التاب مفتوح وهو شغّال — ولو عملت ريفريش هيكمّل.",
-    "noModel": "لسه مفيش موديل تفكير متظبط على السيرفر — شغّال بالمخطط البسيط. ضيف ANTHROPIC_API_KEY (Claude) أو OPENROUTER_API_KEY (GPT و Gemini…) في Vercel علشان السوبر كمبيوتر الكامل يشتغل."
+    "noModel": "لسه مفيش موديل تفكير متظبط على السيرفر — شغّال بالمخطط البسيط. ضيف ANTHROPIC_API_KEY (Claude) أو OPENROUTER_API_KEY (GPT و Gemini…) في Vercel علشان السوبر كمبيوتر الكامل يشتغل.",
+    "doneShort": "خلص في {time}"
   }
 }

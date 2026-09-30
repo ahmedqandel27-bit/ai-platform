@@ -10,9 +10,10 @@ import { normalizePlan, surfaceOf, type Ref, type UploadInfo } from "@/lib/super
 import { waitForRun } from "@/lib/supercomputer/runner"
 import { emptyAgent, useSuperComputer, type AgentAsset, type AgentState } from "@/lib/supercomputer/store"
 import { agentTurn } from "./actions"
+import { hfAgentInterrupt, hfAgentPoll, hfAgentSend, hfAgentStart } from "./higgsfield"
 import { MAX_GENERATIONS_PER_RUN, MAX_PARALLEL_GENERATIONS, MAX_TURNS_PER_RUN } from "./limits"
 import type { AskUserInput, GenerateImageInput, GenerateVideoInput } from "./tools"
-import type { AgentTurn, ToolCall, ToolResult, TranscriptUpload } from "./types"
+import { HF_AGENT_ID, type AgentTurn, type ToolCall, type ToolResult, type TranscriptUpload } from "./types"
 
 /**
  * The agent loop, driven from the browser: ask the model for its next move →
@@ -61,6 +62,7 @@ export async function sendToAgent(
   text: string,
   uploads: Array<{ url: string; kind: AgentAsset["kind"]; name?: string }>,
 ) {
+  if (sc().agentModel === HF_AGENT_ID) return sendToHiggsfield(sessionId, text, uploads)
   const agent = agentOf(sessionId) ?? emptyAgent()
   const files = addUploads(sessionId, uploads)
   const last = agent.transcript[agent.transcript.length - 1]
@@ -97,6 +99,15 @@ export async function stopAgent(sessionId: string) {
   stopping.add(sessionId)
   const agent = agentOf(sessionId)
   if (!agent) return
+  if (agent.hf) {
+    // The poll loop notices the flag; interrupt here too in case it is between polls.
+    await hfAgentInterrupt({ sessionId: agent.hf.sessionId })
+    if (!driving.has(sessionId)) {
+      stopping.delete(sessionId)
+      patch(sessionId, (a) => ({ ...a, status: "stopped", runEndedAt: Date.now() }))
+    }
+    return
+  }
   const runs = useRunsStore.getState().runs
   const live = Object.values(agent.calls)
     .filter((c) => c.status === "running" && c.runId)
@@ -111,6 +122,12 @@ export async function stopAgent(sessionId: string) {
 
 /** Continue after a stop, an error or a reload. */
 export function resumeAgent(sessionId: string) {
+  const agent = agentOf(sessionId)
+  if (agent?.hf && sc().agentModel === HF_AGENT_ID) {
+    // Higgsfield's turn already ended (stopped or failed): ask it to pick up again.
+    void sendToHiggsfield(sessionId, "Continue where you left off.", [])
+    return
+  }
   patch(sessionId, (a) => ({ ...a, status: "thinking", error: undefined, runEndedAt: undefined, runStartedAt: a.runStartedAt ?? Date.now() }))
   void drive(sessionId)
 }
@@ -119,7 +136,8 @@ export function resumeAgent(sessionId: string) {
 export function resumeAgentsAfterReload() {
   for (const session of sc().sessions) {
     const status = session.agent?.status
-    if (status === "working") void drive(session.id)
+    if (session.agent?.hf?.cursor && (status === "working" || status === "thinking")) void pollHiggsfield(session.id)
+    else if (status === "working") void drive(session.id)
     else if (status === "thinking")
       patch(session.id, (a) => ({ ...a, status: "stopped", error: "Interrupted by a page reload. Press Continue to pick up where it left off." }))
   }
@@ -378,3 +396,141 @@ function prepare(
 }
 
 export type { AskUserInput }
+
+/* ─── Higgsfield Supercomputer (Agent API) ─────────────────────────────── */
+
+const VIDEO_EXT = /\.(mp4|webm|mov|m4v)(\?|#|$)/i
+const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i
+const URL_RE = /https?:\/\/[^\s)\]>"'\u0600-\u06FF]+/g
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function sendToHiggsfield(
+  sessionId: string,
+  text: string,
+  uploads: Array<{ url: string; kind: AgentAsset["kind"]; name?: string }>,
+) {
+  const files = addUploads(sessionId, uploads)
+  useSuperComputer.setState((state) => ({
+    sessions: state.sessions.map((s) => (s.id === sessionId && !s.title ? { ...s, title: text.trim().slice(0, 60) } : s)),
+  }))
+  patch(sessionId, (a) => ({
+    ...a,
+    status: "thinking",
+    error: undefined,
+    runStartedAt: Date.now(),
+    runEndedAt: undefined,
+    generations: 0,
+    turns: 0,
+    transcript: [...a.transcript, { role: "user", text: text.trim(), uploads: files }],
+  }))
+
+  let agent = agentOf(sessionId)!
+  if (!agent.hf) {
+    const started = await hfAgentStart().catch(() => null)
+    if (!started?.ok) {
+      patch(sessionId, (a) => ({ ...a, status: "error", runEndedAt: Date.now(), error: started?.error.message ?? "Could not reach Higgsfield." }))
+      return
+    }
+    patch(sessionId, (a) => ({ ...a, hf: { sessionId: started.data.sessionId, seen: [] } }))
+    agent = agentOf(sessionId)!
+  }
+
+  const content = files.length
+    ? `${text.trim()}\n\nAttached files:\n${files.map((f) => `- ${f.kind}: ${f.url}`).join("\n")}`
+    : text.trim()
+  const sent = await hfAgentSend({ sessionId: agent.hf!.sessionId, content }).catch(() => null)
+  if (!sent?.ok) {
+    patch(sessionId, (a) => ({ ...a, status: "error", runEndedAt: Date.now(), error: sent?.error.message ?? "Could not reach Higgsfield." }))
+    return
+  }
+  patch(sessionId, (a) => ({ ...a, hf: { ...a.hf!, cursor: sent.data.messageId, live: undefined } }))
+  await pollHiggsfield(sessionId)
+}
+
+/** Polls the Higgsfield turn (2s → 10s backoff) until it completes, fails or asks a question. */
+async function pollHiggsfield(sessionId: string) {
+  if (driving.has(sessionId)) return
+  driving.add(sessionId)
+  stopping.delete(sessionId)
+  let delay = 2000
+  let failures = 0
+  try {
+    for (;;) {
+      const agent = agentOf(sessionId)
+      const hf = agent?.hf
+      if (!agent || !hf?.cursor) return
+      if (stopping.has(sessionId)) {
+        await hfAgentInterrupt({ sessionId: hf.sessionId }).catch(() => null)
+        patch(sessionId, (a) => ({ ...a, status: "stopped", runEndedAt: Date.now(), hf: { ...a.hf!, live: undefined } }))
+        return
+      }
+      await sleep(delay)
+      delay = Math.min(delay * 1.5, 10_000)
+
+      const res = await hfAgentPoll({ sessionId: hf.sessionId, after: hf.cursor }).catch(() => null)
+      if (!res?.ok) {
+        if ((!res || res.error.code === "network" || res.error.code === "platform_error") && ++failures < 6) continue
+        patch(sessionId, (a) => ({ ...a, status: "error", runEndedAt: Date.now(), error: res?.error.message ?? "Lost contact with Higgsfield." }))
+        return
+      }
+      failures = 0
+      const assistants = res.data.messages.filter((m) => m.role === "assistant" && m.id)
+      const finished = assistants.filter((m) => m.status !== "processing" && !hf.seen.includes(m.id))
+      for (const m of finished) appendHiggsfieldReply(sessionId, m.id, m.text, m.status === "failed")
+      const live = [...assistants].reverse().find((m) => m.status === "processing")?.text
+      patch(sessionId, (a) => ({ ...a, hf: { ...a.hf!, live: live || undefined } }))
+
+      const ended = assistants.some((m) => m.status !== "processing")
+      if (ended) {
+        const failed = assistants[assistants.length - 1]?.status === "failed"
+        patch(sessionId, (a) => ({
+          ...a,
+          status: failed ? "error" : "done",
+          runEndedAt: Date.now(),
+          ...(failed ? { error: "The Higgsfield agent could not finish this. Press Continue or rephrase." } : {}),
+          hf: { ...a.hf!, live: undefined },
+        }))
+        return
+      }
+      if (res.data.status === "awaiting_input") {
+        // The question is the latest assistant row (possibly still marked processing).
+        const question = assistants[assistants.length - 1]
+        if (question && !agentOf(sessionId)!.hf!.seen.includes(question.id)) appendHiggsfieldReply(sessionId, question.id, question.text, false)
+        patch(sessionId, (a) => ({ ...a, status: "waiting", runEndedAt: Date.now(), hf: { ...a.hf!, live: undefined } }))
+        return
+      }
+    }
+  } finally {
+    driving.delete(sessionId)
+    stopping.delete(sessionId)
+  }
+}
+
+/** Adds one Higgsfield reply to the chat; the media links in it become assets. */
+function appendHiggsfieldReply(sessionId: string, rowId: string, text: string, failed: boolean) {
+  const urls = [...new Set((text.match(URL_RE) ?? []).map((u) => u.replace(/[.,;:!?]+$/, "")))]
+  patch(sessionId, (a) => {
+    const assets = [...a.assets]
+    const ids: string[] = []
+    for (const url of urls) {
+      const kind: AgentAsset["kind"] | null = VIDEO_EXT.test(url) ? "video" : IMAGE_EXT.test(url) ? "image" : null
+      if (!kind) continue
+      const existing = assets.find((x) => x.url === url)
+      if (existing) {
+        ids.push(existing.id)
+        continue
+      }
+      const id = nextAssetId({ ...a, assets }, "a")
+      assets.push({ id, kind, url, source: "generated", model: "Higgsfield" })
+      ids.push(id)
+    }
+    const turn: AgentTurn = {
+      role: "assistant",
+      text: text.trim() || (failed ? "" : "…"),
+      calls: [],
+      model: HF_AGENT_ID,
+      ...(ids.length ? { assetIds: ids } : {}),
+    }
+    return { ...a, assets, transcript: [...a.transcript, turn], hf: { ...a.hf!, seen: [...a.hf!.seen, rowId] } }
+  })
+}
