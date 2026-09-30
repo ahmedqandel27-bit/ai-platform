@@ -1,4 +1,4 @@
-# NEXUS STUDIO
+# The Viral Empire — AI Studio
 
 A private AI creation platform for an agency team. Every image, video and text model runs through
 **one Higgsfield API account**, so the team gets one interface and one bill instead of many subscriptions.
