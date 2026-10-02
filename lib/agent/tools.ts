@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import type { ToolName } from "./types"
+import { MAX_PROMPT_CHARS } from "@/lib/config"
 
 /**
  * The agent's tools. One JSON schema per tool, shared by every provider, plus
@@ -88,14 +89,14 @@ const Ids = z.array(z.string().max(16)).max(8).optional()
 export const TOOL_INPUTS = {
   generate_image: z.object({
     title: z.string().max(200),
-    prompt: z.string().min(1).max(6000),
+    prompt: z.string().min(1).max(MAX_PROMPT_CHARS),
     model: z.string().max(64).optional(),
     settings: Settings,
     references: Ids,
   }),
   generate_video: z.object({
     title: z.string().max(200),
-    prompt: z.string().min(1).max(6000),
+    prompt: z.string().min(1).max(MAX_PROMPT_CHARS),
     model: z.string().max(64).optional(),
     settings: Settings,
     start_frame: z.string().max(16).optional(),

@@ -3,6 +3,7 @@
 import { cookies } from "next/headers"
 import { after } from "next/server"
 
+import { MAX_PROMPT_CHARS } from "@/lib/config"
 import { isSupabaseConfigured } from "@/lib/env"
 import { getModel, parseSettings } from "./catalog"
 import type { MediaItem, Surface } from "./catalog/types"
@@ -51,7 +52,7 @@ export async function getKeyStatus(): Promise<{ userKey: boolean; teamKey: boole
 /* ─── Guards ───────────────────────────────────────────────────────────── */
 
 const CLIENT_ID = /^[A-Za-z0-9_-]{8,64}$/
-const MAX_PROMPT = 5000
+const MAX_PROMPT = MAX_PROMPT_CHARS
 const SUBMITS_PER_MINUTE = 30
 
 /** Per-instance guards. The database unique constraint is the durable one. */

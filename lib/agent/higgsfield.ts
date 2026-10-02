@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 
+import { MAX_MESSAGE_CHARS } from "@/lib/config"
 import { toAuthorizationHeader } from "@/generation/credentials"
 import { getViewer, resolveCredentials } from "@/generation/server-credentials"
 
@@ -92,7 +93,7 @@ export async function hfAgentStart(): Promise<Result<{ sessionId: string }>> {
 }
 
 export async function hfAgentSend(input: unknown): Promise<Result<{ messageId: string }>> {
-  const parsed = z.object({ sessionId: Id, content: z.string().min(1).max(20_000) }).safeParse(input)
+  const parsed = z.object({ sessionId: Id, content: z.string().min(1).max(MAX_MESSAGE_CHARS * 2) }).safeParse(input)
   if (!parsed.success) return fail("invalid_input", "Invalid request.")
   const result = await call<{ message_id?: string }>("POST", `/v1/agent/sessions/${parsed.data.sessionId}/messages`, {
     content: parsed.data.content,

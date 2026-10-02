@@ -15,6 +15,7 @@ import {
   Trash2,
   TriangleAlert,
 } from "lucide-react";
+import { MAX_PROMPT_CHARS } from "@/lib/config";
 import { MODELS, getModel } from "@/generation/catalog";
 import { autoPick, coerceSettings, reconcileStep, surfaceOf, type Ref } from "@/lib/supercomputer/plan";
 import type { StepState } from "@/lib/supercomputer/store";
@@ -139,7 +140,7 @@ export function StepCard({
             dir="auto"
             disabled={!editable}
             value={step.prompt}
-            maxLength={5000}
+            maxLength={MAX_PROMPT_CHARS}
             onChange={(e) => onChange({ ...step, prompt: e.target.value })}
             className="text-[13px] disabled:opacity-80"
           />

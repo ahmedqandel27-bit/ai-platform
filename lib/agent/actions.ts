@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 
+import { MAX_MESSAGE_CHARS } from "@/lib/config"
 import { getViewer } from "@/generation/server-credentials"
 import { LLMError } from "@/lib/llm/types"
 import { getTeamContext } from "@/lib/team/server"
@@ -33,10 +34,10 @@ const Call = z.object({
 const Turn = z.discriminatedUnion("role", [
   z.object({
     role: z.literal("user"),
-    text: z.string().max(12_000),
+    text: z.string().max(MAX_MESSAGE_CHARS),
     uploads: z.array(Upload).max(8),
     context: z.string().max(8000).optional(),
-    brief: z.string().max(12_000).optional(),
+    brief: z.string().max(MAX_MESSAGE_CHARS).optional(),
   }),
   z.object({
     role: z.literal("assistant"),
@@ -52,7 +53,7 @@ const Turn = z.discriminatedUnion("role", [
     results: z
       .array(z.object({ id: z.string().max(128), ok: z.boolean(), text: z.string().max(8000), images: z.array(z.string().url().max(4000)).max(8).optional() }))
       .max(16),
-    answer: z.object({ text: z.string().max(12_000), uploads: z.array(Upload).max(8) }).optional(),
+    answer: z.object({ text: z.string().max(MAX_MESSAGE_CHARS), uploads: z.array(Upload).max(8) }).optional(),
   }),
 ])
 
@@ -116,7 +117,7 @@ Resolve ambiguity with the best creative choice; never ask questions. Apply the 
 ${PLAYBOOK}`
 
 const BriefInput = z.object({
-  text: z.string().min(1).max(12_000),
+  text: z.string().min(1).max(MAX_MESSAGE_CHARS),
   files: z.array(z.object({ kind: z.string().max(16), url: z.string().url().max(4000) })).max(8),
   memory: z.array(z.string().max(300)).max(40),
   history: z.string().max(12_000).default(""),

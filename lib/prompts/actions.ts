@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 
+import { MAX_PROMPT_CHARS } from "@/lib/config"
 import { getTeamContext } from "@/lib/team/server"
 import { createClient } from "@/lib/supabase/server"
 import type { ActionResult } from "@/lib/team/actions"
@@ -44,7 +45,7 @@ export async function listPrompts(): Promise<ActionResult<SavedPrompt[] | null>>
 
 const PromptInput = z.object({
   title: z.string().trim().min(1).max(120),
-  body: z.string().trim().min(1).max(5000),
+  body: z.string().trim().min(1).max(MAX_PROMPT_CHARS),
   tags: z.array(z.string().trim().toLowerCase().min(1).max(30)).max(10),
   surface: z.enum(["image", "video", "any"]),
 })

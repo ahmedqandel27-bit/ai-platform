@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { MAX_PROMPT_CHARS } from "@/lib/config";
 import { savePrompt, type SavedPrompt } from "@/lib/prompts/actions";
 import { useLocalPrompts } from "@/lib/prompts/local-store";
 import { Button } from "@/components/ui/button";
@@ -78,7 +79,7 @@ export function PromptDialog({ draft, onClose }: { draft: PromptDraft | null; on
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="prompt-body">{t("body")}</Label>
-            <Textarea id="prompt-body" dir="auto" required rows={6} maxLength={5000} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
+            <Textarea id="prompt-body" dir="auto" required rows={6} maxLength={MAX_PROMPT_CHARS} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
