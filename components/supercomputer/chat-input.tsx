@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowUp, Loader2, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
+import { MAX_MESSAGE_CHARS } from "@/lib/config";
 import { useKeyDialog } from "@/generation/stores/key-dialog";
 import { uploadMedia } from "@/generation/upload";
 import { mediaKindFromMime } from "@/generation/upload-contract";
@@ -113,7 +114,7 @@ export function ChatInput({
           value={value}
           dir="auto"
           rows={1}
-          maxLength={8000}
+          maxLength={MAX_MESSAGE_CHARS}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {

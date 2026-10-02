@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 
+import { MAX_MESSAGE_CHARS, MAX_PROMPT_CHARS } from "@/lib/config"
 import { MODELS } from "@/generation/catalog"
 import { getViewer } from "@/generation/server-credentials"
 import { isSupabaseConfigured } from "@/lib/env"
@@ -51,7 +52,7 @@ export async function getAssistantStatus(): Promise<{ provider: LLMProviderId; t
 
 const PlanInput = z.object({
   turns: z
-    .array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(12_000) }))
+    .array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(MAX_MESSAGE_CHARS) }))
     .min(1)
     .max(24),
   uploads: z
@@ -95,7 +96,7 @@ export async function planPipeline(input: unknown): Promise<AssistantResult<Plan
 
 /* ─── Text tools ───────────────────────────────────────────────────────── */
 
-const ScriptInput = z.object({ brief: z.string().min(1).max(8000), context: z.string().max(8000).default("") })
+const ScriptInput = z.object({ brief: z.string().min(1).max(MAX_MESSAGE_CHARS), context: z.string().max(MAX_MESSAGE_CHARS).default("") })
 
 export async function writeScript(input: unknown): Promise<AssistantResult<{ text: string }>> {
   const blocked = await guard()
@@ -115,7 +116,7 @@ export async function writeScript(input: unknown): Promise<AssistantResult<{ tex
   }
 }
 
-const EnhanceInput = z.object({ prompt: z.string().min(1).max(5000), model: z.string().max(64) })
+const EnhanceInput = z.object({ prompt: z.string().min(1).max(MAX_PROMPT_CHARS), model: z.string().max(64) })
 
 /** "✨ Enhance prompt" in the studios: rewrites a rough idea into a production prompt for the chosen model. */
 export async function enhancePrompt(input: unknown): Promise<AssistantResult<{ prompt: string }>> {

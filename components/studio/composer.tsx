@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { BookmarkPlus, KeyRound, Loader2, Sparkles, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
+import { MAX_PROMPT_CHARS } from "@/lib/config";
 import { MODELS, parseSettings } from "@/generation/catalog";
 import { inferInputMode } from "@/generation/catalog/media-inputs";
 import type { Surface } from "@/generation/catalog/types";
@@ -172,7 +173,8 @@ export function Composer({ surface }: { surface: Surface }) {
           id={`prompt-${surface}`}
           rows={5}
           value={prompt}
-          maxLength={5000}
+          maxLength={MAX_PROMPT_CHARS}
+          className="max-h-[60vh] min-h-32 resize-y"
           placeholder={surface === "image" ? t("promptPlaceholderImage") : t("promptPlaceholderVideo")}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={(e) => {
@@ -182,6 +184,11 @@ export function Composer({ surface }: { surface: Surface }) {
             }
           }}
         />
+        {prompt.length > 1000 && (
+          <p className="text-end text-[10px] tabular-nums text-muted/70" dir="ltr">
+            {prompt.length.toLocaleString("en")} / {MAX_PROMPT_CHARS.toLocaleString("en")}
+          </p>
+        )}
       </section>
 
       <section className="space-y-2">

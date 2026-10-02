@@ -2,11 +2,13 @@
 
 import { z } from "zod"
 
+import { MAX_MESSAGE_CHARS } from "@/lib/config"
 import { getViewer } from "@/generation/server-credentials"
 import { LLMError } from "@/lib/llm/types"
 import { getTeamContext } from "@/lib/team/server"
-import { anthropicAgentTurn } from "./anthropic"
-import { availableAgentModels, findAgentModel, loopModels } from "./models"
+import { anthropicAgentTurn, anthropicDirectorBrief } from "./anthropic"
+import { availableAgentModels, findAgentModel, hasAnthropic, loopModels } from "./models"
+import { PLAYBOOK } from "./playbook"
 import { openRouterAgentTurn } from "./openrouter"
 import { buildAgentSystemPrompt } from "./system-prompt"
 import { EFFORTS, type AgentModelInfo, type AgentTurn, type AgentTurnResponse } from "./types"
@@ -25,12 +27,18 @@ export async function listAgentModels(): Promise<AgentModelInfo[]> {
 const Upload = z.object({ id: z.string().max(16), url: z.string().url().max(4000), kind: z.enum(["image", "video", "audio"]) })
 const Call = z.object({
   id: z.string().max(128),
-  name: z.enum(["generate_image", "generate_video", "ask_user"]),
+  name: z.enum(["generate_image", "generate_video", "remember", "ask_user"]),
   input: z.record(z.string(), z.unknown()),
   invalid: z.string().optional(),
 })
 const Turn = z.discriminatedUnion("role", [
-  z.object({ role: z.literal("user"), text: z.string().max(12_000), uploads: z.array(Upload).max(8) }),
+  z.object({
+    role: z.literal("user"),
+    text: z.string().max(MAX_MESSAGE_CHARS),
+    uploads: z.array(Upload).max(8),
+    context: z.string().max(8000).optional(),
+    brief: z.string().max(MAX_MESSAGE_CHARS).optional(),
+  }),
   z.object({
     role: z.literal("assistant"),
     text: z.string().max(40_000),
@@ -45,7 +53,7 @@ const Turn = z.discriminatedUnion("role", [
     results: z
       .array(z.object({ id: z.string().max(128), ok: z.boolean(), text: z.string().max(8000), images: z.array(z.string().url().max(4000)).max(8).optional() }))
       .max(16),
-    answer: z.object({ text: z.string().max(12_000), uploads: z.array(Upload).max(8) }).optional(),
+    answer: z.object({ text: z.string().max(MAX_MESSAGE_CHARS), uploads: z.array(Upload).max(8) }).optional(),
   }),
 ])
 
@@ -92,5 +100,54 @@ export async function agentTurn(input: unknown): Promise<{ ok: true; data: Agent
     if (caught instanceof LLMError) return fail(caught.code, caught.message)
     console.error("[agent] unexpected error", caught instanceof Error ? caught.message : caught)
     return fail("provider_error", "Something went wrong. Try again.")
+  }
+}
+
+const DIRECTOR_SYSTEM = `You are the creative director of an Arab-market creative agency. You turn the owner's quick message (often Egyptian or Gulf Arabic) into a production brief for Higgsfield's Supercomputer, an AI agent that generates the images and videos with Higgsfield's tools.
+
+Write the brief in English, decisive and specific, max ~350 words:
+1. Concept — one sentence: the idea and the feeling.
+2. Deliverables — each piece with platform, aspect ratio, duration, count, resolution (default 1080p or the best available).
+3. Look & feel — palette, lighting, lens/camera style, references to keep consistent (attached files by their links).
+4. Shot list — numbered; for each shot: what we see, camera move, lighting, and a ready-to-use prompt line.
+5. Copy — hooks/captions/CTA in the user's language when the job needs them.
+6. Working rules — generate keyframes first and review them, keep product/character identical across shots, deliver links in order.
+Resolve ambiguity with the best creative choice; never ask questions. Apply the studio memory. Output only the brief.
+
+${PLAYBOOK}`
+
+const BriefInput = z.object({
+  text: z.string().min(1).max(MAX_MESSAGE_CHARS),
+  files: z.array(z.object({ kind: z.string().max(16), url: z.string().url().max(4000) })).max(8),
+  memory: z.array(z.string().max(300)).max(40),
+  history: z.string().max(12_000).default(""),
+})
+
+/**
+ * Director mode for Higgsfield runs: with a Claude key on the server, the
+ * user's message is rewritten into a full production brief first. Without
+ * one it returns null and the message goes to Higgsfield as written.
+ */
+export async function writeDirectorBrief(input: unknown): Promise<{ ok: true; data: { brief: string | null } } | Failure> {
+  const viewer = await getViewer()
+  if (!viewer) return fail("unauthenticated", "Sign in to continue.")
+  if (!hasAnthropic()) return { ok: true, data: { brief: null } }
+  const parsed = BriefInput.safeParse(input)
+  if (!parsed.success) return fail("invalid_input", "Invalid request.")
+  const { text, files, memory, history } = parsed.data
+  const request = [
+    memory.length ? `Studio memory (standing preferences):\n${memory.map((m) => `- ${m}`).join("\n")}` : "",
+    history ? `Conversation so far (for context):\n${history}` : "",
+    `New message from the owner:\n${text}`,
+    files.length ? `Attached files:\n${files.map((f) => `- ${f.kind}: ${f.url}`).join("\n")}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+  try {
+    return { ok: true, data: { brief: await anthropicDirectorBrief({ system: DIRECTOR_SYSTEM, request }) } }
+  } catch (caught) {
+    // The brief is an upgrade, not a gate: on failure the message goes out as written.
+    console.error("[agent] director brief failed", caught instanceof Error ? caught.message : caught)
+    return { ok: true, data: { brief: null } }
   }
 }

@@ -27,7 +27,7 @@ export type AgentModelInfo = {
   effort: boolean
 }
 
-export type ToolName = "generate_image" | "generate_video" | "ask_user"
+export type ToolName = "generate_image" | "generate_video" | "remember" | "ask_user"
 
 export type ToolCall = {
   id: string
@@ -48,7 +48,15 @@ export type ToolResult = {
 export type TranscriptUpload = { id: string; url: string; kind: "image" | "video" | "audio" }
 
 export type AgentTurn =
-  | { role: "user"; text: string; uploads: TranscriptUpload[] }
+  | {
+      role: "user"
+      text: string
+      uploads: TranscriptUpload[]
+      /** Sent to the model ahead of the text but not shown in the chat (studio memory). */
+      context?: string
+      /** The creative director's brief written from this message (Higgsfield runs). */
+      brief?: string
+    }
   | {
       role: "assistant"
       text: string

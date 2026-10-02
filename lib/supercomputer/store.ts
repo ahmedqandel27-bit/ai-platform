@@ -75,6 +75,8 @@ export type AgentState = {
   turns: number
   /** Results already gathered for a turn that also asked the user something. */
   pending?: ToolResult[]
+  /** The studio memory as last shown to the model in this chat (resent only when it changes). */
+  memorySent?: string
   /** Higgsfield Agent API session (when the chat runs on Higgsfield's Supercomputer). */
   hf?: {
     sessionId: string
@@ -105,6 +107,10 @@ type State = {
   agentModel: string | null
   agentEffort: Effort
   setAgentPrefs: (prefs: { model?: string; effort?: Effort }) => void
+  /** Studio memory: lasting facts about the user's brand and taste, applied in every chat. */
+  memory: string[]
+  addMemory: (fact: string) => void
+  removeMemory: (index: number) => void
   patchAgent: (sessionId: string, fn: (agent: AgentState) => AgentState) => void
   newSession: () => string
   selectSession: (id: string) => void
@@ -150,13 +156,22 @@ export const useSuperComputer = create<State>()(
       agentEffort: "high",
       setAgentPrefs: ({ model, effort }) =>
         set((state) => ({ agentModel: model ?? state.agentModel, agentEffort: effort ?? state.agentEffort })),
+      memory: [],
+      addMemory: (fact) =>
+        set((state) => {
+          const clean = fact.trim().slice(0, 300)
+          if (!clean || state.memory.some((m) => m.toLowerCase() === clean.toLowerCase())) return state
+          return { memory: [...state.memory, clean].slice(-40) }
+        }),
+      removeMemory: (index) => set((state) => ({ memory: state.memory.filter((_, i) => i !== index) })),
       patchAgent: (sessionId, fn) =>
         set((state) => ({
           sessions: mapSession(state.sessions, sessionId, (s) => ({ ...s, agent: fn(s.agent ?? emptyAgent()) })),
         })),
       newSession: () => {
         const current = get().sessions.find((s) => s.id === get().activeId)
-        if (current && current.messages.length === 0) return current.id
+        // Reuse the open chat only if nothing has been said in it yet (plan or agent).
+        if (current && current.messages.length === 0 && !current.agent?.transcript.length) return current.id
         const session: Session = { id: crypto.randomUUID(), title: "", createdAt: Date.now(), updatedAt: Date.now(), messages: [] }
         set((state) => ({ sessions: [session, ...state.sessions].slice(0, MAX_SESSIONS), activeId: session.id }))
         return session.id
@@ -230,6 +245,7 @@ export const useSuperComputer = create<State>()(
         localRecipes: s.localRecipes,
         agentModel: s.agentModel,
         agentEffort: s.agentEffort,
+        memory: s.memory,
       }),
     },
   ),

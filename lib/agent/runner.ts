@@ -1,6 +1,7 @@
 "use client"
 
 import { getModel } from "@/generation/catalog"
+import { APP_NAME } from "@/lib/config"
 import { inferInputMode } from "@/generation/catalog/media-inputs"
 import type { MediaItem, MediaRole } from "@/generation/catalog/types"
 import { isTerminal, type Run } from "@/generation/run-types"
@@ -9,7 +10,7 @@ import { cancelRun, submitRun } from "@/lib/studio/runs-controller"
 import { normalizePlan, surfaceOf, type Ref, type UploadInfo } from "@/lib/supercomputer/plan"
 import { waitForRun } from "@/lib/supercomputer/runner"
 import { emptyAgent, useSuperComputer, type AgentAsset, type AgentState } from "@/lib/supercomputer/store"
-import { agentTurn } from "./actions"
+import { agentTurn, writeDirectorBrief } from "./actions"
 import { hfAgentInterrupt, hfAgentPoll, hfAgentSend, hfAgentStart } from "./higgsfield"
 import { MAX_GENERATIONS_PER_RUN, MAX_PARALLEL_GENERATIONS, MAX_TURNS_PER_RUN } from "./limits"
 import type { AskUserInput, GenerateImageInput, GenerateVideoInput } from "./tools"
@@ -31,6 +32,14 @@ const FATAL = new Set(["missing_key", "invalid_key", "insufficient_credits", "un
 const sc = () => useSuperComputer.getState()
 const agentOf = (sessionId: string): AgentState | undefined => sc().sessions.find((s) => s.id === sessionId)?.agent
 const patch = (sessionId: string, fn: (a: AgentState) => AgentState) => sc().patchAgent(sessionId, fn)
+
+/** "[Studio memory]" block for the model, or undefined when this chat already has the current version. */
+function memoryContext(agent: AgentState): { context?: string; sent?: string } {
+  const memory = sc().memory
+  const joined = memory.join("\n")
+  if (!memory.length || joined === agent.memorySent) return {}
+  return { context: `[Studio memory]\n${memory.map((m) => `- ${m}`).join("\n")}`, sent: joined }
+}
 
 export function isDriving(sessionId: string) {
   return driving.has(sessionId)
@@ -89,7 +98,12 @@ export async function sendToAgent(
         transcript: [...a.transcript, { role: "tool", results: [...(a.pending ?? []), answer], answer: { text: text.trim(), uploads: files } }],
       }
     }
-    return { ...base, transcript: [...a.transcript, { role: "user", text: text.trim(), uploads: files }] }
+    const mem = memoryContext(a)
+    return {
+      ...base,
+      ...(mem.sent !== undefined ? { memorySent: mem.sent } : {}),
+      transcript: [...a.transcript, { role: "user", text: text.trim(), uploads: files, ...(mem.context ? { context: mem.context } : {}) }],
+    }
   })
   await drive(sessionId)
 }
@@ -254,6 +268,13 @@ async function executeCall(sessionId: string, call: ToolCall): Promise<{ result:
     return { result: { id: call.id, ok: false, text } }
   }
   if (call.invalid) return fail(JSON.stringify({ INVALID_JSON: call.invalid }))
+  if (call.name === "remember") {
+    const fact = String(call.input.fact ?? "").trim()
+    sc().addMemory(fact)
+    // The chat now knows this fact: don't resend it as new memory.
+    patch(sessionId, (a) => ({ ...a, memorySent: sc().memory.join("\n"), calls: { ...a.calls, [call.id]: { status: "done" } } }))
+    return { result: { id: call.id, ok: true, text: "Saved to the studio memory." } }
+  }
   if (stopping.has(sessionId)) return { result: stoppedResult(sessionId, call) }
 
   const agent = agentOf(sessionId)!
@@ -329,7 +350,7 @@ function prepare(
 ): { submit: Parameters<typeof submitRun>[0] } | { error: string } {
   if (call.name === "ask_user") return { error: "ask_user is answered by the user, not executed." }
   const input = call.input as GenerateImageInput | GenerateVideoInput
-  const tool = call.name
+  const tool = call.name as "generate_image" | "generate_video"
   // Every image asset becomes an "upload" slot so the plan validator can check references.
   const images = agent.assets.filter((a) => a.kind === "image")
   const slots: UploadInfo[] = images.map((a) => ({ url: a.url, kind: "image" }))
@@ -404,6 +425,11 @@ const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i
 const URL_RE = /https?:\/\/[^\s)\]>"'\u0600-\u06FF]+/g
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+/** Opening context for a new Higgsfield session. */
+const HF_PREAMBLE = `[Context: you are working for ${APP_NAME}, a creative agency in the Arab market. Reply in the language the owner writes in (often Egyptian Arabic). Default to the best resolution available and the right aspect ratio for the platform. Review your keyframes before animating, keep products and characters consistent across shots, and finish with the deliverables' links in order.]
+
+`
+
 async function sendToHiggsfield(
   sessionId: string,
   text: string,
@@ -435,9 +461,35 @@ async function sendToHiggsfield(
     agent = agentOf(sessionId)!
   }
 
-  const content = files.length
-    ? `${text.trim()}\n\nAttached files:\n${files.map((f) => `- ${f.kind}: ${f.url}`).join("\n")}`
-    : text.trim()
+  // Director mode: Claude (when configured) turns the message into a full production brief.
+  const history = agent.transcript
+    .slice(-8, -1)
+    .flatMap((t) => (t.role === "user" ? [`Owner: ${t.text}`] : t.role === "assistant" && t.text ? [`Agent: ${t.text}`] : []))
+    .join("\n")
+    .slice(-6000)
+  const directed = await writeDirectorBrief({
+    text: text.trim() || "(see attached files)",
+    files: files.map((f) => ({ kind: f.kind, url: f.url })),
+    memory: sc().memory,
+    history,
+  }).catch(() => null)
+  const brief = directed?.ok ? directed.data.brief : null
+  if (brief) {
+    patch(sessionId, (a) => {
+      const transcript = [...a.transcript]
+      const last = transcript[transcript.length - 1]
+      if (last?.role === "user") transcript[transcript.length - 1] = { ...last, brief }
+      return { ...a, transcript }
+    })
+  }
+
+  const first = !agent.hf!.cursor
+  const mem = memoryContext(agent)
+  const attachments = files.length ? `\n\nAttached files:\n${files.map((f) => `- ${f.kind}: ${f.url}`).join("\n")}` : ""
+  const content = brief
+    ? `${first ? HF_PREAMBLE : ""}${brief}\n\n---\nThe owner's original words: "${text.trim()}"${attachments}`
+    : `${first ? HF_PREAMBLE : ""}${mem.context ? `${mem.context}\n\n` : ""}${text.trim()}${attachments}`
+  if (mem.sent !== undefined) patch(sessionId, (a) => ({ ...a, memorySent: mem.sent }))
   const sent = await hfAgentSend({ sessionId: agent.hf!.sessionId, content }).catch(() => null)
   if (!sent?.ok) {
     patch(sessionId, (a) => ({ ...a, status: "error", runEndedAt: Date.now(), error: sent?.error.message ?? "Could not reach Higgsfield." }))

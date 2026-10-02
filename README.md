@@ -103,6 +103,18 @@ delivery note. The user picks the model and effort in the chat box.
 | Claude Opus 5.5 (default), Claude Fable 5.1, Claude Sonnet 5.5 | `ANTHROPIC_API_KEY` (or `LLM_API_KEY` with `LLM_PROVIDER=anthropic`) |
 | GPT, Gemini, Grok, … | `OPENROUTER_API_KEY`, plus optionally `OPENROUTER_MODELS="openai/gpt-5=GPT-5,google/gemini-2.5-pro=Gemini 2.5 Pro"` (OpenRouter ids) |
 
+What makes it smart:
+- **Director mode.** With `ANTHROPIC_API_KEY` set, every message to Higgsfield's Supercomputer first goes through a Claude
+  creative director, which writes a decisive English production brief: concept, deliverables, look, shot list with
+  prompt lines, and copy. The brief is shown collapsed under the message.
+- **Playbook** (`lib/agent/playbook.ts`), shared by the director and the in-app agent. It covers:
+  - Egyptian/Gulf agency shorthand.
+  - Ad structures and hooks.
+  - Camera, lens and lighting language, and prompt structure.
+  - Consistency rules and a review checklist.
+- **Studio memory.** Brand facts and taste, applied in every chat. The user edits it in the side panel, and the agent
+  saves what it learns with its `remember` tool. It is stored per browser.
+
 How the in-app agent (Claude / OpenRouter models) runs:
 - The loop runs in the browser, one server call per model turn (up to 5 minutes each), so no request has to
   outlive a serverless limit.

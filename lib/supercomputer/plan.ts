@@ -1,3 +1,4 @@
+import { MAX_PROMPT_CHARS } from "@/lib/config"
 import { MODELS, getModel, parseSettings } from "@/generation/catalog"
 import type { GenerationPlane, MediaRole, ModelEntry, SettingField, Surface } from "@/generation/catalog/types"
 import { toPlatform } from "@/generation/to-platform"
@@ -151,7 +152,7 @@ export function normalizePlan(draft: PlanDraft, uploads: UploadInfo[], disabled:
 
     const tool = raw.tool
     const title = raw.title.trim().slice(0, 80) || tool
-    const prompt = raw.prompt.trim().slice(0, 5000)
+    const prompt = raw.prompt.trim().slice(0, MAX_PROMPT_CHARS)
     const surface = surfaceOf(tool)
 
     if (!surface) {
@@ -284,7 +285,7 @@ export function sanitizePlan(value: unknown): Plan | null {
       title: typeof s.title === "string" ? s.title.slice(0, 80) : s.tool,
       model: typeof s.model === "string" ? s.model : "",
       auto: s.auto !== false,
-      prompt: typeof s.prompt === "string" ? s.prompt.slice(0, 5000) : "",
+      prompt: typeof s.prompt === "string" ? s.prompt.slice(0, MAX_PROMPT_CHARS) : "",
       settings: s.settings && typeof s.settings === "object" ? s.settings : {},
       startFrame: refOk(s.startFrame) ? s.startFrame : null,
       endFrame: refOk(s.endFrame) ? s.endFrame : null,

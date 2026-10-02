@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import { BookMarked, Loader2, MessageSquarePlus, Play, Trash2 } from "lucide-react";
+import { BookMarked, Brain, Loader2, MessageSquarePlus, Play, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { isTerminal } from "@/generation/run-types";
 import { useRunsStore } from "@/generation/stores/runs";
@@ -97,6 +97,8 @@ export function SidePanel({ session }: { session: Session }) {
         </div>
       </Section>
 
+      <MemorySection />
+
       <Section
         title={t("session")}
         aside={
@@ -177,6 +179,65 @@ export function SidePanel({ session }: { session: Session }) {
         )}
       </Section>
     </aside>
+  );
+}
+
+/** Studio memory: brand facts and taste applied in every agent chat (the agent adds to it too). */
+function MemorySection() {
+  const t = useTranslations("agent");
+  const { memory, addMemory, removeMemory } = useSuperComputer();
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    if (!draft.trim()) return;
+    addMemory(draft);
+    setDraft("");
+  };
+  return (
+    <Section title={t("memory")} aside={<Brain className="size-3.5 text-accent" />}>
+      <p className="mb-2 text-[11px] leading-relaxed text-muted/80">{t("memoryHint")}</p>
+      {memory.length ? (
+        <ul className="mb-2 max-h-48 space-y-1 overflow-y-auto">
+          {memory.map((fact, i) => (
+            <li key={`${i}:${fact}`} className="group flex items-start gap-2 rounded-lg bg-white/[0.03] px-2.5 py-1.5 text-xs">
+              <span dir="auto" className="min-w-0 flex-1">
+                {fact}
+              </span>
+              <button
+                type="button"
+                onClick={() => removeMemory(i)}
+                aria-label="Remove"
+                className="shrink-0 text-muted opacity-0 hover:text-danger group-hover:opacity-100 focus-visible:opacity-100"
+              >
+                <X className="size-3" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mb-2 text-xs text-muted">{t("memoryEmpty")}</p>
+      )}
+      <div className="flex items-center gap-1.5">
+        <input
+          value={draft}
+          dir="auto"
+          maxLength={300}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) add();
+          }}
+          placeholder={t("memoryPlaceholder")}
+          className="h-8 min-w-0 flex-1 rounded-lg border border-border bg-surface-2 px-2.5 text-xs outline-none focus:border-accent/50"
+        />
+        <button
+          type="button"
+          onClick={add}
+          aria-label={t("memoryAdd")}
+          className="grid size-8 shrink-0 place-items-center rounded-lg border border-border text-muted hover:border-accent/50 hover:text-foreground"
+        >
+          <Plus className="size-3.5" />
+        </button>
+      </div>
+    </Section>
   );
 }
 
